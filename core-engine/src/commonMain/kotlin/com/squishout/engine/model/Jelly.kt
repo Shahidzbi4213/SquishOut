@@ -1,0 +1,49 @@
+package com.squishout.engine.model
+
+enum class JellyType(
+    val defaultDirection: Direction,
+    val hexColor: String,
+    val displayName: String,
+    val length: Int = 1
+) {
+    STRAWBERRY(Direction.NORTH, "#FF4D6D", "Strawberry Blobby"),
+    BLUEBERRY(Direction.EAST, "#00B4D8", "Blueberry Drop"),
+    LEMON(Direction.WEST, "#FFB703", "Lemon Zest"),
+    KIWI(Direction.SOUTH, "#06D6A0", "Kiwi Gummy"),
+    GRAPE_EEL(Direction.NORTH, "#9D4EDD", "Grape Eel Duo", length = 2);
+}
+
+enum class EyeState {
+    AWAKE,  // Unblocked path to board edge: eyes sparkling ( ✦‿✦ ), rim glowing
+    ASLEEP  // Path blocked: eyes peacefully closed ( ˘◡˘ )
+}
+
+data class Jelly(
+    val id: String,
+    val type: JellyType,
+    val direction: Direction,
+    val tiles: List<Position>,
+    val eyeState: EyeState = EyeState.ASLEEP
+) {
+    init {
+        require(tiles.isNotEmpty()) { "Jelly must occupy at least one tile" }
+    }
+
+    val headPosition: Position
+        get() = tiles.first()
+
+    fun occupies(pos: Position): Boolean = pos in tiles
+
+    fun withEyeState(newState: EyeState): Jelly = copy(eyeState = newState)
+}
+
+enum class ObstacleType(val symbol: String, val hexColor: String) {
+    ROCK_MOUNTAIN("▲", "#4A5568"),
+    ROCK_TREE("♣", "#2D3748")
+}
+
+data class Obstacle(
+    val id: String,
+    val type: ObstacleType,
+    val position: Position
+)
