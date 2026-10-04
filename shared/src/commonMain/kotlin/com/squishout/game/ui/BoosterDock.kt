@@ -31,6 +31,7 @@ fun BoosterDock(
     onUndo: () -> Unit,
     onHint: () -> Unit,
     onWand: () -> Unit,
+    onShopRequested: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -49,19 +50,19 @@ fun BoosterDock(
                 icon = "↩",
                 badge = undoCount,
                 badgeColor = SquishColors.KiwiDark,
-                onClick = onUndo
+                onClick = { if (undoCount > 0) onUndo() else onShopRequested() }
             )
             BoosterButton(
                 icon = "💡",
                 badge = hintCount,
                 badgeColor = SquishColors.Strawberry,
-                onClick = onHint
+                onClick = { if (hintCount > 0) onHint() else onShopRequested() }
             )
             BoosterButton(
                 icon = "🪄",
                 badge = wandCount,
                 badgeColor = SquishColors.LemonDark,
-                onClick = onWand
+                onClick = { if (wandCount > 0) onWand() else onShopRequested() }
             )
         }
     }
@@ -101,9 +102,9 @@ private fun BoosterButton(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "$badge",
+                text = if (badge > 0) "$badge" else "+",
                 color = Color.White,
-                fontSize = 11.sp,
+                fontSize = if (badge > 0) 11.sp else 13.sp,
                 fontWeight = FontWeight.Bold
             )
         }

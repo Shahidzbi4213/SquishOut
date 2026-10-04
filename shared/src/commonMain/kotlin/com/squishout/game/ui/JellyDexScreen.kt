@@ -65,6 +65,7 @@ fun JellyDexScreen(
     onEquipSkin: (String) -> Unit,
     onUnlockSkin: (String, Int) -> Unit,
     onNavigateToMap: () -> Unit,
+    onNavigateToShop: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val equippedSkin = skins.firstOrNull { it.isEquipped } ?: skins.firstOrNull()
@@ -144,7 +145,8 @@ fun JellyDexScreen(
             SagaBottomNav(
                 selectedTab = "dex",
                 onMapClick = onNavigateToMap,
-                onDexClick = {}
+                onDexClick = {},
+                onShopClick = onNavigateToShop
             )
         }
     }

@@ -191,6 +191,22 @@ class GameEngine {
         return target
     }
 
+    fun addBoosters(undo: Int = 0, hint: Int = 0, wand: Int = 0) {
+        _state.update { prev ->
+            prev.copy(
+                undoCount = prev.undoCount + undo,
+                hintCount = prev.hintCount + hint,
+                wandCount = prev.wandCount + wand
+            )
+        }
+    }
+
+    fun refillHearts() {
+        _state.update { prev ->
+            prev.copy(hearts = prev.maxHearts, isGameOver = false)
+        }
+    }
+
     private fun findFirstBlocker(jelly: Jelly, board: Board): Position? {
         val path = board.getEscapePath(jelly)
         for (pos in path) {

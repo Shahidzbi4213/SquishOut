@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -37,60 +39,82 @@ fun App() {
     val scope = rememberCoroutineScope()
 
     var currentScreen by remember { mutableStateOf(AppScreen.SAGA_MAP) }
+    var isShopOpen by remember { mutableStateOf(false) }
 
     val session by repository.session.collectAsState()
     val levels by repository.allLevels.collectAsState(initial = emptyList())
     val skins by repository.allSkins.collectAsState(initial = emptyList())
 
     SquishOutTheme {
-        AnimatedContent(
-            targetState = currentScreen,
-            transitionSpec = { fadeIn() togetherWith fadeOut() }
-        ) { screen ->
-            when (screen) {
-                AppScreen.SAGA_MAP -> {
-                    SagaMapScreen(
-                        session = session,
-                        levelRecords = levels,
-                        onSelectStage = { stage ->
-                            viewModel.loadStage(stage)
-                            currentScreen = AppScreen.GAMEPLAY
-                        },
-                        onNavigateToDex = {
-                            currentScreen = AppScreen.JELLY_DEX
-                        }
-                    )
-                }
-
-                AppScreen.GAMEPLAY -> {
-                    GameScreen(
-                        viewModel = viewModel,
-                        onBackToMap = {
-                            currentScreen = AppScreen.SAGA_MAP
-                        }
-                    )
-                }
-
-                AppScreen.JELLY_DEX -> {
-                    JellyDexScreen(
-                        session = session,
-                        skins = skins,
-                        onEquipSkin = { skinId ->
-                            scope.launch {
-                                repository.equipSkin(skinId)
+        androidx.compose.foundation.layout.Box(modifier = androidx.compose.ui.Modifier.fillMaxSize()) {
+            AnimatedContent(
+                targetState = currentScreen,
+                transitionSpec = { fadeIn() togetherWith fadeOut() }
+            ) { screen ->
+                when (screen) {
+                    AppScreen.SAGA_MAP -> {
+                        SagaMapScreen(
+                            session = session,
+                            levelRecords = levels,
+                            onSelectStage = { stage ->
+                                viewModel.loadStage(stage)
+                                currentScreen = AppScreen.GAMEPLAY
+                            },
+                            onNavigateToDex = {
+                                currentScreen = AppScreen.JELLY_DEX
+                            },
+                            onNavigateToShop = {
+                                isShopOpen = true
                             }
-                        },
-                        onUnlockSkin = { skinId, cost ->
-                            scope.launch {
-                                repository.unlockSkin(skinId, cost)
+                        )
+                    }
+
+                    AppScreen.GAMEPLAY -> {
+                        GameScreen(
+                            viewModel = viewModel,
+                            onBackToMap = {
+                                currentScreen = AppScreen.SAGA_MAP
                             }
-                        },
-                        onNavigateToMap = {
-                            currentScreen = AppScreen.SAGA_MAP
-                        }
-                    )
+                        )
+                    }
+
+                    AppScreen.JELLY_DEX -> {
+                        JellyDexScreen(
+                            session = session,
+                            skins = skins,
+                            onEquipSkin = { skinId ->
+                                scope.launch {
+                                    repository.equipSkin(skinId)
+                                }
+                            },
+                            onUnlockSkin = { skinId, cost ->
+                                scope.launch {
+                                    repository.unlockSkin(skinId, cost)
+                                }
+                            },
+                            onNavigateToMap = {
+                                currentScreen = AppScreen.SAGA_MAP
+                            },
+                            onNavigateToShop = {
+                                isShopOpen = true
+                            }
+                        )
+                    }
                 }
             }
+
+            // Global Booster Shop Modal for Map & Dex
+            com.squishout.game.ui.BoosterShopModal(
+                isVisible = isShopOpen,
+                candies = session.candies,
+                gems = session.gems,
+                onBuyUndo = { viewModel.purchaseUndoPack() },
+                onBuyHint = { viewModel.purchaseHintPack() },
+                onBuyWand = { viewModel.purchaseWandPack() },
+                onRefillHeartsGems = { viewModel.purchaseHeartRefill() },
+                onRefillHeartAd = { viewModel.reviveWithAd() },
+                onDismiss = { isShopOpen = false }
+            )
         }
     }
 }

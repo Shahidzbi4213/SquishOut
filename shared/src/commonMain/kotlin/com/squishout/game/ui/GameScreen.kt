@@ -22,6 +22,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,8 +45,12 @@ fun GameScreen(
     modifier: Modifier = Modifier
 ) {
     val gameState by viewModel.gameState.collectAsState()
+    val session by viewModel.sessionState.collectAsState()
     val activeLaunches by viewModel.activeLaunches.collectAsState()
     val wobbleOffsets by viewModel.wobbleOffsets.collectAsState()
+
+    var isSettingsOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var isShopOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -66,7 +73,7 @@ fun GameScreen(
                     stage = gameState.stageNumber,
                     hearts = gameState.hearts,
                     onBack = onBackToMap,
-                    onSettings = {}
+                    onSettings = { isSettingsOpen = true }
                 )
 
                 // 2. The Hero 6x6 Board
@@ -94,7 +101,8 @@ fun GameScreen(
                         wandCount = gameState.wandCount,
                         onUndo = viewModel::useUndo,
                         onHint = viewModel::useHint,
-                        onWand = viewModel::useMagicWand
+                        onWand = viewModel::useMagicWand,
+                        onShopRequested = { isShopOpen = true }
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                 }
@@ -119,14 +127,45 @@ fun GameScreen(
             GameOverModal(
                 isVisible = gameState.isGameOver,
                 onReviveWithAd = {
-                    viewModel.restartLevel()
+                    viewModel.reviveWithAd()
                 },
                 onReviveWithGems = {
-                    viewModel.restartLevel()
+                    viewModel.purchaseHeartRefill()
                 },
                 onRestart = {
                     viewModel.restartLevel()
                 }
+            )
+
+            // 6. Settings & Pause Modal Overlay
+            SettingsModal(
+                isVisible = isSettingsOpen,
+                soundEnabled = session.soundEnabled,
+                hapticsEnabled = session.hapticsEnabled,
+                onToggleSound = viewModel::toggleSound,
+                onToggleHaptics = viewModel::toggleHaptics,
+                onResume = { isSettingsOpen = false },
+                onRestart = {
+                    isSettingsOpen = false
+                    viewModel.restartLevel()
+                },
+                onExitToMap = {
+                    isSettingsOpen = false
+                    onBackToMap()
+                }
+            )
+
+            // 7. Booster Shop Modal Overlay
+            BoosterShopModal(
+                isVisible = isShopOpen,
+                candies = session.candies,
+                gems = session.gems,
+                onBuyUndo = { viewModel.purchaseUndoPack() },
+                onBuyHint = { viewModel.purchaseHintPack() },
+                onBuyWand = { viewModel.purchaseWandPack() },
+                onRefillHeartsGems = { viewModel.purchaseHeartRefill() },
+                onRefillHeartAd = { viewModel.reviveWithAd() },
+                onDismiss = { isShopOpen = false }
             )
         }
     }

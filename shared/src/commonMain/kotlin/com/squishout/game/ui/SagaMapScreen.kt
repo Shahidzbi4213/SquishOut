@@ -64,6 +64,7 @@ fun SagaMapScreen(
     levelRecords: List<LevelRecordEntity>,
     onSelectStage: (Int) -> Unit,
     onNavigateToDex: () -> Unit,
+    onNavigateToShop: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val totalStages = 50
@@ -160,7 +161,8 @@ fun SagaMapScreen(
             SagaBottomNav(
                 selectedTab = "map",
                 onMapClick = {},
-                onDexClick = onNavigateToDex
+                onDexClick = onNavigateToDex,
+                onShopClick = onNavigateToShop
             )
         }
     }
@@ -405,6 +407,7 @@ fun SagaBottomNav(
     selectedTab: String,
     onMapClick: () -> Unit,
     onDexClick: () -> Unit,
+    onShopClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -452,6 +455,23 @@ fun SagaBottomNav(
                     fontSize = 11.sp,
                     fontWeight = if (selectedTab == "dex") FontWeight.ExtraBold else FontWeight.Medium,
                     color = if (selectedTab == "dex") EmeraldMint else SlateCharcoal.copy(alpha = 0.5f)
+                )
+            }
+
+            // Shop Tab
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onShopClick() }
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+            ) {
+                Text(text = "🍬", fontSize = 20.sp)
+                Text(
+                    text = "Shop",
+                    fontSize = 11.sp,
+                    fontWeight = if (selectedTab == "shop") FontWeight.ExtraBold else FontWeight.Medium,
+                    color = if (selectedTab == "shop") EmeraldMint else SlateCharcoal.copy(alpha = 0.5f)
                 )
             }
         }

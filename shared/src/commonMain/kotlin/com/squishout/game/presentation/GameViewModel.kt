@@ -68,19 +68,31 @@ class GameViewModel(
         _wobbleOffsets.value = emptyMap()
     }
 
+    private fun playSound(sound: SoundEffect) {
+        if (sessionState.value.soundEnabled) {
+            audioPlayer?.playSound(sound)
+        }
+    }
+
+    private fun triggerHaptic(isError: Boolean = false) {
+        if (sessionState.value.hapticsEnabled) {
+            audioPlayer?.triggerHaptic(isError)
+        }
+    }
+
     fun onTileTapped(pos: Position) {
         val result = engine.onTileTapped(pos)
         when (result) {
             is TapResult.Launched -> {
-                audioPlayer?.playSound(SoundEffect.POP)
-                audioPlayer?.triggerHaptic(isError = false)
+                playSound(SoundEffect.POP)
+                triggerHaptic(isError = false)
 
                 // Animate launch
                 animateLaunch(result)
 
                 if (result.isSolved) {
                     viewModelScope.launch {
-                        audioPlayer?.playSound(SoundEffect.VICTORY)
+                        playSound(SoundEffect.VICTORY)
                         val finalState = engine.state.value
                         repository?.recordLevelCompletion(
                             levelNumber = currentStage,
@@ -93,8 +105,8 @@ class GameViewModel(
                 }
             }
             is TapResult.Blocked -> {
-                audioPlayer?.playSound(SoundEffect.WOBBLE)
-                audioPlayer?.triggerHaptic(isError = true)
+                playSound(SoundEffect.WOBBLE)
+                triggerHaptic(isError = true)
                 animateWobble(result.jelly.id)
             }
             TapResult.EmptyTile, TapResult.GameOver -> {
@@ -154,24 +166,24 @@ class GameViewModel(
 
     fun useUndo() {
         if (engine.useUndo()) {
-            audioPlayer?.playSound(SoundEffect.BOOSTER)
-            audioPlayer?.triggerHaptic(isError = false)
+            playSound(SoundEffect.BOOSTER)
+            triggerHaptic(isError = false)
         }
     }
 
     fun useHint() {
         val hintId = engine.useHint()
         if (hintId != null) {
-            audioPlayer?.playSound(SoundEffect.BOOSTER)
-            audioPlayer?.triggerHaptic(isError = false)
+            playSound(SoundEffect.BOOSTER)
+            triggerHaptic(isError = false)
         }
     }
 
     fun useMagicWand() {
         val removed = engine.useMagicWand()
         if (removed != null) {
-            audioPlayer?.playSound(SoundEffect.POP)
-            audioPlayer?.triggerHaptic(isError = false)
+            playSound(SoundEffect.POP)
+            triggerHaptic(isError = false)
         }
     }
 
@@ -181,5 +193,80 @@ class GameViewModel(
 
     fun restartLevel() {
         loadStage(currentStage)
+    }
+
+    fun toggleSound(enabled: Boolean) {
+        viewModelScope.launch {
+            repository?.toggleSound(enabled)
+        }
+    }
+
+    fun toggleHaptics(enabled: Boolean) {
+        viewModelScope.launch {
+            repository?.toggleHaptics(enabled)
+        }
+    }
+
+    fun purchaseUndoPack(onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            if (repository?.spendCandies(50) == true) {
+                engine.addBoosters(undo = 3)
+                playSound(SoundEffect.BOOSTER)
+                triggerHaptic(false)
+                onSuccess()
+            }
+        }
+    }
+
+    fun purchaseHintPack(onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            if (repository?.spendCandies(75) == true) {
+                engine.addBoosters(hint = 3)
+                playSound(SoundEffect.BOOSTER)
+                triggerHaptic(false)
+                onSuccess()
+            }
+        }
+    }
+
+    fun purchaseWandPack(onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            if (repository?.spendCandies(100) == true) {
+                engine.addBoosters(wand = 1)
+                playSound(SoundEffect.BOOSTER)
+                triggerHaptic(false)
+                onSuccess()
+            }
+        }
+    }
+
+    fun purchaseHeartRefill(onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            if (repository?.reviveWithGems(10) == true) {
+                engine.refillHearts()
+                playSound(SoundEffect.BOOSTER)
+                triggerHaptic(false)
+                onSuccess()
+            }
+        }
+    }
+
+    fun reviveWithAd(onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            if (repository?.reviveWithAd() == true) {
+                engine.refillHearts()
+                playSound(SoundEffect.BOOSTER)
+                triggerHaptic(false)
+                onSuccess()
+            }
+        }
+    }
+
+    fun buyBoosters(costCandies: Int, onPurchased: () -> Unit) {
+        viewModelScope.launch {
+            if (repository?.spendCandies(costCandies) == true) {
+                onPurchased()
+            }
+        }
     }
 }
