@@ -176,36 +176,40 @@ actual class AudioPlayer(private val context: Context) {
     }
 
     actual fun triggerHaptic(type: HapticFeedbackType) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val effect = when (type) {
-                HapticFeedbackType.LIGHT_CLICK -> {
-                    VibrationEffect.createOneShot(25, 100)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val effect = when (type) {
+                    HapticFeedbackType.LIGHT_CLICK -> {
+                        VibrationEffect.createOneShot(25, 100)
+                    }
+                    HapticFeedbackType.ERROR_WOBBLE -> {
+                        VibrationEffect.createOneShot(80, 180)
+                    }
+                    HapticFeedbackType.CRACK_THUMP -> {
+                        // Double pulse: 30ms pulse, 40ms pause, 50ms pulse
+                        val timings = longArrayOf(0, 30, 40, 50)
+                        val amplitudes = intArrayOf(0, 160, 0, 220)
+                        VibrationEffect.createWaveform(timings, amplitudes, -1)
+                    }
+                    HapticFeedbackType.VICTORY_FANFARE -> {
+                        // Ascending triplet fanfare: 40ms, 60ms pause, 40ms, 60ms pause, 80ms
+                        val timings = longArrayOf(0, 40, 60, 40, 60, 80)
+                        val amplitudes = intArrayOf(0, 120, 0, 180, 0, 255)
+                        VibrationEffect.createWaveform(timings, amplitudes, -1)
+                    }
                 }
-                HapticFeedbackType.ERROR_WOBBLE -> {
-                    VibrationEffect.createOneShot(80, 180)
-                }
-                HapticFeedbackType.CRACK_THUMP -> {
-                    // Double pulse: 30ms pulse, 40ms pause, 50ms pulse
-                    val timings = longArrayOf(0, 30, 40, 50)
-                    val amplitudes = intArrayOf(0, 160, 0, 220)
-                    VibrationEffect.createWaveform(timings, amplitudes, -1)
-                }
-                HapticFeedbackType.VICTORY_FANFARE -> {
-                    // Ascending triplet fanfare: 40ms, 60ms pause, 40ms, 60ms pause, 80ms
-                    val timings = longArrayOf(0, 40, 60, 40, 60, 80)
-                    val amplitudes = intArrayOf(0, 120, 0, 180, 0, 255)
-                    VibrationEffect.createWaveform(timings, amplitudes, -1)
+                vibrator?.vibrate(effect)
+            } else {
+                @Suppress("DEPRECATION")
+                when (type) {
+                    HapticFeedbackType.LIGHT_CLICK -> vibrator?.vibrate(25)
+                    HapticFeedbackType.ERROR_WOBBLE -> vibrator?.vibrate(80)
+                    HapticFeedbackType.CRACK_THUMP -> vibrator?.vibrate(longArrayOf(0, 30, 40, 50), -1)
+                    HapticFeedbackType.VICTORY_FANFARE -> vibrator?.vibrate(longArrayOf(0, 40, 60, 40, 60, 80), -1)
                 }
             }
-            vibrator?.vibrate(effect)
-        } else {
-            @Suppress("DEPRECATION")
-            when (type) {
-                HapticFeedbackType.LIGHT_CLICK -> vibrator?.vibrate(25)
-                HapticFeedbackType.ERROR_WOBBLE -> vibrator?.vibrate(80)
-                HapticFeedbackType.CRACK_THUMP -> vibrator?.vibrate(longArrayOf(0, 30, 40, 50), -1)
-                HapticFeedbackType.VICTORY_FANFARE -> vibrator?.vibrate(longArrayOf(0, 40, 60, 40, 60, 80), -1)
-            }
+        } catch (_: Throwable) {
+            // Safe fallback if vibrator is unavailable or permission is denied
         }
     }
 

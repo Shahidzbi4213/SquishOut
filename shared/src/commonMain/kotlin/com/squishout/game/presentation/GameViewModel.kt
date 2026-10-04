@@ -1,9 +1,5 @@
 package com.squishout.game.presentation
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -146,15 +142,18 @@ class GameViewModel(
 
             _activeLaunches.value = _activeLaunches.value + anim
 
-            val animatable = Animatable(0f)
-            animatable.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(durationMillis = 320, easing = FastOutLinearInEasing)
-            ) {
-                val currentProgress = value
+            val durationMs = 320L
+            val startTime = com.squishout.game.util.currentTimeMillis()
+            while (true) {
+                val elapsed = com.squishout.game.util.currentTimeMillis() - startTime
+                val rawProgress = (elapsed.toFloat() / durationMs).coerceIn(0f, 1f)
+                // FastOutLinearIn easing: t^2
+                val progress = rawProgress * rawProgress
                 _activeLaunches.value = _activeLaunches.value.map {
-                    if (it.jelly.id == result.jelly.id) it.copy(progress = currentProgress) else it
+                    if (it.jelly.id == result.jelly.id) it.copy(progress = progress) else it
                 }
+                if (rawProgress >= 1f) break
+                delay(16)
             }
 
             // Remove finished launch animation
@@ -164,14 +163,16 @@ class GameViewModel(
 
     private fun animateWobble(jellyId: String) {
         viewModelScope.launch {
-            val animatable = Animatable(0f)
-            animatable.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(durationMillis = 200, easing = LinearEasing)
-            ) {
-                // 3 full sine waves
-                val offset = sin(value * 6f * kotlin.math.PI.toFloat()) * (1f - value)
+            val durationMs = 200L
+            val startTime = com.squishout.game.util.currentTimeMillis()
+            while (true) {
+                val elapsed = com.squishout.game.util.currentTimeMillis() - startTime
+                val progress = (elapsed.toFloat() / durationMs).coerceIn(0f, 1f)
+                // 3 full sine waves with decay
+                val offset = sin(progress * 6f * kotlin.math.PI.toFloat()) * (1f - progress)
                 _wobbleOffsets.value = _wobbleOffsets.value + (jellyId to offset)
+                if (progress >= 1f) break
+                delay(16)
             }
             _wobbleOffsets.value = _wobbleOffsets.value - jellyId
         }
