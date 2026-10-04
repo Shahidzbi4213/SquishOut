@@ -4,6 +4,7 @@ import com.squishout.engine.generator.Level
 import com.squishout.engine.model.Board
 import com.squishout.engine.model.EyeState
 import com.squishout.engine.model.Jelly
+import com.squishout.engine.model.Obstacle
 import com.squishout.engine.model.Position
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +17,8 @@ sealed interface TapResult {
         val exitPath: List<Position>,
         val pointsEarned: Int,
         val isSolved: Boolean,
-        val stars: Int
+        val stars: Int,
+        val shatteredObstacles: List<Obstacle> = emptyList()
     ) : TapResult
 
     data class Blocked(
@@ -85,9 +87,14 @@ class GameEngine {
         return if (jelly.eyeState == EyeState.AWAKE) {
             // 1. Unblocked -> Launch!
             val exitPath = current.board.getEscapePath(jelly)
-            val updatedBoard = current.board.removeJelly(jelly.id)
+            val afterRemoval = current.board.removeJelly(jelly.id)
+
+            // Damage any crackable obstacle adjacent to launching jelly or its on-board escape path
+            val traversed = (jelly.tiles + exitPath.filter { it.isWithinBounds(current.board.width, current.board.height) }).toSet()
+            val (updatedBoard, shattered) = afterRemoval.damageObstaclesAdjacentTo(traversed)
+
             val isSolved = updatedBoard.isSolved
-            val points = 100 + (current.movesUsed * 5)
+            val points = 100 + (current.movesUsed * 5) + (shattered.size * 50)
             val newMoves = current.movesUsed + 1
             val stars = if (isSolved) calculateStars(newMoves, current.optimalMoves) else 0
 
@@ -108,7 +115,8 @@ class GameEngine {
                 exitPath = exitPath,
                 pointsEarned = points,
                 isSolved = isSolved,
-                stars = stars
+                stars = stars,
+                shatteredObstacles = shattered
             )
         } else {
             // 2. Blocked -> Wobble refusal and deduce heart if illegal tap penalty applies

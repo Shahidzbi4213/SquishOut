@@ -34,9 +34,12 @@ fun SkiaBoardView(
     highlightedJellyId: String? = null,
     onTileTapped: (Position) -> Unit,
     modifier: Modifier = Modifier,
+    stage: Int = 1,
     activeLaunches: List<LaunchAnimation> = emptyList(),
     wobbleOffsets: Map<String, Float> = emptyMap()
 ) {
+    val biome = com.squishout.game.theme.BiomeTheme.forStage(stage)
+
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
@@ -70,13 +73,14 @@ fun SkiaBoardView(
                     }
                 }
         ) {
-            // 1. Draw Glazed Porcelain Tray & Recessed Inset Wells
+            // 1. Draw Glazed Porcelain Tray & Recessed Inset Wells with Biome Accent
             TrayRenderer.drawTray(
                 drawScope = this,
                 boardWidth = board.width,
                 boardHeight = board.height,
                 tileSize = tileSize,
-                trayPadding = trayPadding
+                trayPadding = trayPadding,
+                biome = biome
             )
 
             // 2. Draw Obstacles

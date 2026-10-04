@@ -18,7 +18,8 @@ object TrayRenderer {
         boardWidth: Int,
         boardHeight: Int,
         tileSize: Float,
-        trayPadding: Float = tileSize * 0.15f
+        trayPadding: Float = tileSize * 0.15f,
+        biome: com.squishout.game.theme.BiomeTheme = com.squishout.game.theme.BiomeTheme.SWEET_MEADOW
     ) {
         val totalWidth = boardWidth * tileSize + trayPadding * 2
         val totalHeight = boardHeight * tileSize + trayPadding * 2
@@ -33,17 +34,17 @@ object TrayRenderer {
                 cornerRadius = trayRadius
             )
 
-            // 2. Glazed Porcelain Enamel Tray Body
+            // 2. Glazed Porcelain Enamel Tray Body with Biome Floor
             drawRoundRect(
-                color = SquishColors.PorcelainTray,
+                color = biome.trayFloor,
                 topLeft = Offset.Zero,
                 size = Size(totalWidth, totalHeight),
                 cornerRadius = trayRadius
             )
 
-            // 3. Subtle Glazed Border
+            // 3. Subtle Glazed Biome Border
             drawRoundRect(
-                color = SquishColors.PorcelainTrayBorder,
+                color = biome.trayRimDark,
                 topLeft = Offset.Zero,
                 size = Size(totalWidth, totalHeight),
                 cornerRadius = trayRadius,
@@ -59,21 +60,21 @@ object TrayRenderer {
 
                     // Soft inner shadow ring
                     drawCircle(
-                        color = SquishColors.InsetWellShadow.copy(alpha = 0.65f),
+                        color = biome.trayRimDark.copy(alpha = 0.25f),
                         radius = wellRadius + tileSize * 0.02f,
                         center = Offset(cx, cy + tileSize * 0.015f)
                     )
 
                     // Well center base
                     drawCircle(
-                        color = SquishColors.InsetWell,
+                        color = biome.trayRimLight,
                         radius = wellRadius,
                         center = Offset(cx, cy)
                     )
 
                     // Tiny central pin dot
                     drawCircle(
-                        color = SquishColors.PorcelainTrayBorder,
+                        color = biome.trayRimDark.copy(alpha = 0.4f),
                         radius = tileSize * 0.035f,
                         center = Offset(cx, cy)
                     )
@@ -93,42 +94,137 @@ object TrayRenderer {
         val cornerRadius = CornerRadius(tileSize * 0.28f, tileSize * 0.28f)
 
         drawScope.apply {
-            // Rock base
-            drawRoundRect(
-                color = SquishColors.SlateObstacleDark,
-                topLeft = Offset(topLeft.x, topLeft.y + tileSize * 0.06f),
-                size = Size(size, size),
-                cornerRadius = cornerRadius
-            )
-            drawRoundRect(
-                color = SquishColors.SlateObstacle,
-                topLeft = topLeft,
-                size = Size(size, size),
-                cornerRadius = cornerRadius
-            )
-
-            // Distinct glyph indicator (Mountain vs Tree)
             val cx = topLeft.x + size / 2f
             val cy = topLeft.y + size / 2f
-            val glyphColor = Color.White.copy(alpha = 0.85f)
 
-            if (obstacle.type == ObstacleType.ROCK_MOUNTAIN) {
-                // Draw mountain triangle
-                val path = androidx.compose.ui.graphics.Path().apply {
-                    moveTo(cx, cy - tileSize * 0.18f)
-                    lineTo(cx + tileSize * 0.18f, cy + tileSize * 0.12f)
-                    lineTo(cx - tileSize * 0.18f, cy + tileSize * 0.12f)
-                    close()
+            when (obstacle.type) {
+                ObstacleType.ROCK_MOUNTAIN -> {
+                    // Rock mountain base
+                    drawRoundRect(
+                        color = SquishColors.SlateObstacleDark,
+                        topLeft = Offset(topLeft.x, topLeft.y + tileSize * 0.06f),
+                        size = Size(size, size),
+                        cornerRadius = cornerRadius
+                    )
+                    drawRoundRect(
+                        color = SquishColors.SlateObstacle,
+                        topLeft = topLeft,
+                        size = Size(size, size),
+                        cornerRadius = cornerRadius
+                    )
+                    // Mountain triangle
+                    val path = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(cx, cy - tileSize * 0.18f)
+                        lineTo(cx + tileSize * 0.18f, cy + tileSize * 0.12f)
+                        lineTo(cx - tileSize * 0.18f, cy + tileSize * 0.12f)
+                        close()
+                    }
+                    drawPath(path, color = Color.White.copy(alpha = 0.85f), style = Fill)
                 }
-                drawPath(path, color = glyphColor, style = Fill)
-            } else {
-                // Draw tree symbol (circle + trunk)
-                drawCircle(color = glyphColor, radius = tileSize * 0.12f, center = Offset(cx, cy - tileSize * 0.05f))
-                drawRect(
-                    color = glyphColor,
-                    topLeft = Offset(cx - tileSize * 0.03f, cy + tileSize * 0.05f),
-                    size = Size(tileSize * 0.06f, tileSize * 0.1f)
-                )
+
+                ObstacleType.ROCK_TREE -> {
+                    // Rock tree base
+                    drawRoundRect(
+                        color = SquishColors.SlateObstacleDark,
+                        topLeft = Offset(topLeft.x, topLeft.y + tileSize * 0.06f),
+                        size = Size(size, size),
+                        cornerRadius = cornerRadius
+                    )
+                    drawRoundRect(
+                        color = SquishColors.SlateObstacle,
+                        topLeft = topLeft,
+                        size = Size(size, size),
+                        cornerRadius = cornerRadius
+                    )
+                    // Tree symbol
+                    drawCircle(color = Color.White.copy(alpha = 0.85f), radius = tileSize * 0.12f, center = Offset(cx, cy - tileSize * 0.05f))
+                    drawRect(
+                        color = Color.White.copy(alpha = 0.85f),
+                        topLeft = Offset(cx - tileSize * 0.03f, cy + tileSize * 0.05f),
+                        size = Size(tileSize * 0.06f, tileSize * 0.1f)
+                    )
+                }
+
+                ObstacleType.ICE_BLOCK -> {
+                    // Frosted Ice Block
+                    val iceDark = Color(0xFF60A5FA)
+                    val iceBase = Color(0xFF93C5FD)
+                    drawRoundRect(
+                        color = iceDark,
+                        topLeft = Offset(topLeft.x, topLeft.y + tileSize * 0.06f),
+                        size = Size(size, size),
+                        cornerRadius = cornerRadius
+                    )
+                    drawRoundRect(
+                        color = iceBase,
+                        topLeft = topLeft,
+                        size = Size(size, size),
+                        cornerRadius = cornerRadius
+                    )
+                    // Ice glint highlight
+                    drawRoundRect(
+                        color = Color.White.copy(alpha = 0.6f),
+                        topLeft = Offset(topLeft.x + size * 0.12f, topLeft.y + size * 0.12f),
+                        size = Size(size * 0.76f, size * 0.25f),
+                        cornerRadius = CornerRadius(size * 0.12f, size * 0.12f)
+                    )
+
+                    // Snowflake / star motif in center
+                    val motifColor = Color.White.copy(alpha = 0.9f)
+                    drawLine(motifColor, Offset(cx - size * 0.2f, cy), Offset(cx + size * 0.2f, cy), strokeWidth = 3f)
+                    drawLine(motifColor, Offset(cx, cy - size * 0.2f), Offset(cx, cy + size * 0.2f), strokeWidth = 3f)
+                    drawLine(motifColor, Offset(cx - size * 0.14f, cy - size * 0.14f), Offset(cx + size * 0.14f, cy + size * 0.14f), strokeWidth = 2.5f)
+                    drawLine(motifColor, Offset(cx - size * 0.14f, cy + size * 0.14f), Offset(cx + size * 0.14f, cy - size * 0.14f), strokeWidth = 2.5f)
+
+                    // Crack fracture lines if damaged (health < maxHealth)
+                    if (obstacle.health < obstacle.maxHealth) {
+                        val crackPath = androidx.compose.ui.graphics.Path().apply {
+                            moveTo(cx - size * 0.28f, cy - size * 0.25f)
+                            lineTo(cx - size * 0.05f, cy - size * 0.02f)
+                            lineTo(cx + size * 0.08f, cy - size * 0.12f)
+                            lineTo(cx + size * 0.28f, cy + size * 0.22f)
+                        }
+                        drawPath(crackPath, color = Color(0xFF1E3A8A), style = Stroke(width = 3.5f))
+                    }
+                }
+
+                ObstacleType.HONEY_POT -> {
+                    // Warm golden Honey Pot
+                    val honeyDark = Color(0xFFD97706)
+                    val honeyBase = Color(0xFFF59E0B)
+                    drawRoundRect(
+                        color = honeyDark,
+                        topLeft = Offset(topLeft.x, topLeft.y + tileSize * 0.06f),
+                        size = Size(size, size),
+                        cornerRadius = cornerRadius
+                    )
+                    drawRoundRect(
+                        color = honeyBase,
+                        topLeft = topLeft,
+                        size = Size(size, size),
+                        cornerRadius = cornerRadius
+                    )
+
+                    // Honey jar rim & dripping honey
+                    drawRoundRect(
+                        color = Color(0xFFFEF3C7),
+                        topLeft = Offset(topLeft.x + size * 0.15f, topLeft.y + size * 0.1f),
+                        size = Size(size * 0.7f, size * 0.2f),
+                        cornerRadius = CornerRadius(size * 0.1f, size * 0.1f)
+                    )
+                    // Honey drip drop
+                    drawCircle(
+                        color = Color(0xFFFCD34D),
+                        radius = size * 0.14f,
+                        center = Offset(cx, cy + size * 0.1f)
+                    )
+                    // Drip highlight
+                    drawCircle(
+                        color = Color.White.copy(alpha = 0.75f),
+                        radius = size * 0.05f,
+                        center = Offset(cx - size * 0.04f, cy + size * 0.07f)
+                    )
+                }
             }
         }
     }

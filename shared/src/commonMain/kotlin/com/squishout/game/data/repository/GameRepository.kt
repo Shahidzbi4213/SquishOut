@@ -257,4 +257,56 @@ class GameRepository(
     suspend fun toggleHaptics(enabled: Boolean) {
         sessionDao.updateHapticsEnabled(enabled)
     }
+
+    suspend fun claimDailyReward(currentEpochMs: Long): DailyReward? {
+        val currentSession = sessionDao.getSession().firstOrNull() ?: return null
+        val currentDay = currentEpochMs / (24 * 60 * 60 * 1000L)
+        if (currentDay == currentSession.lastClaimEpochDay) {
+            return null // Already claimed today
+        }
+
+        val newStreak = when {
+            currentSession.lastClaimEpochDay == 0L -> 1
+            currentDay == currentSession.lastClaimEpochDay + 1L -> {
+                val next = currentSession.loginStreakDays + 1
+                if (next > 7) 1 else next
+            }
+            else -> 1 // Streak broken, restart at day 1
+        }
+
+        val reward = DAILY_REWARDS_SCHEDULE[(newStreak - 1).coerceIn(0, 6)]
+        if (reward.candies > 0) sessionDao.addCandies(reward.candies)
+        if (reward.gems > 0) sessionDao.addGems(reward.gems)
+        if (reward.lives > 0) {
+            val newLives = min(currentSession.maxLives, currentSession.lives + reward.lives)
+            sessionDao.insertOrUpdate(currentSession.copy(lives = newLives))
+        }
+        sessionDao.updateStreak(newStreak, currentDay)
+        return reward
+    }
+
+    fun canClaimDailyReward(currentEpochMs: Long): Boolean {
+        val currentSession = session.value
+        val currentDay = currentEpochMs / (24 * 60 * 60 * 1000L)
+        return currentDay != currentSession.lastClaimEpochDay
+    }
 }
+
+data class DailyReward(
+    val day: Int,
+    val rewardTitle: String,
+    val icon: String,
+    val candies: Int = 0,
+    val gems: Int = 0,
+    val lives: Int = 0
+)
+
+val DAILY_REWARDS_SCHEDULE = listOf(
+    DailyReward(day = 1, rewardTitle = "50 Candies", icon = "🍬", candies = 50),
+    DailyReward(day = 2, rewardTitle = "+1 Life", icon = "❤️", lives = 1),
+    DailyReward(day = 3, rewardTitle = "75 Candies", icon = "🍬", candies = 75),
+    DailyReward(day = 4, rewardTitle = "10 Gems", icon = "💎", gems = 10),
+    DailyReward(day = 5, rewardTitle = "100 Candies", icon = "🍬", candies = 100),
+    DailyReward(day = 6, rewardTitle = "15 Gems", icon = "💎", gems = 15),
+    DailyReward(day = 7, rewardTitle = "Mega Box", icon = "🎁", candies = 250, gems = 25)
+)

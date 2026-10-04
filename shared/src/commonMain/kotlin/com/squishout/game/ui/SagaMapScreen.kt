@@ -65,6 +65,8 @@ fun SagaMapScreen(
     onSelectStage: (Int) -> Unit,
     onNavigateToDex: () -> Unit,
     onNavigateToShop: () -> Unit = {},
+    onOpenDailyReward: () -> Unit = {},
+    canClaimDaily: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val totalStages = 50
@@ -108,7 +110,12 @@ fun SagaMapScreen(
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header
-            SagaHeader(session = session)
+            SagaHeader(
+                session = session,
+                onOpenDailyReward = onOpenDailyReward,
+                canClaimDaily = canClaimDaily,
+                onOpenShop = onNavigateToShop
+            )
 
             // Scrollable Map
             LazyColumn(
@@ -169,7 +176,12 @@ fun SagaMapScreen(
 }
 
 @Composable
-private fun SagaHeader(session: UserSessionEntity) {
+private fun SagaHeader(
+    session: UserSessionEntity,
+    onOpenDailyReward: () -> Unit = {},
+    canClaimDaily: Boolean = false,
+    onOpenShop: () -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -210,15 +222,42 @@ private fun SagaHeader(session: UserSessionEntity) {
                 }
             }
 
-            // Profile Avatar
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF0F766E)),
-                contentAlignment = Alignment.Center
+            // Top action buttons: Daily Reward & Profile Avatar
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "👤", fontSize = 16.sp)
+                // Daily Gift Button
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(if (canClaimDaily) Color(0xFFFEF3C7) else FrostedWhite)
+                        .clickable { onOpenDailyReward() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "🎁", fontSize = 18.sp)
+                    if (canClaimDaily) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(9.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFEF4444))
+                        )
+                    }
+                }
+
+                // Profile Avatar
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF0F766E)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "👤", fontSize = 16.sp)
+                }
             }
         }
 
@@ -243,12 +282,13 @@ private fun SagaHeader(session: UserSessionEntity) {
                 Text(text = "${session.currentStage}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SlateCharcoal)
             }
 
-            // Candies Capsule
+            // Candies Capsule (Clickable -> Opens Shop)
             Row(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(16.dp))
                     .background(FrostedWhite)
+                    .clickable { onOpenShop() }
                     .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
@@ -258,11 +298,12 @@ private fun SagaHeader(session: UserSessionEntity) {
                 Text(text = "${session.candies}", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = SlateCharcoal)
             }
 
-            // Lives Capsule
+            // Lives Capsule (Clickable -> Opens Shop)
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
                     .background(FrostedWhite)
+                    .clickable { onOpenShop() }
                     .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {

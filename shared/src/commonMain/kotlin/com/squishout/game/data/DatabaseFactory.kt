@@ -11,6 +11,7 @@ interface DatabaseFactory {
 
 fun configureDatabaseBuilder(builder: RoomDatabase.Builder<SquishDatabase>): SquishDatabase {
     return builder
+        .fallbackToDestructiveMigration(true)
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
         .build()

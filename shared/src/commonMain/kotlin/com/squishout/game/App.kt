@@ -40,10 +40,20 @@ fun App() {
 
     var currentScreen by remember { mutableStateOf(AppScreen.SAGA_MAP) }
     var isShopOpen by remember { mutableStateOf(false) }
+    var isDailyRewardOpen by remember { mutableStateOf(false) }
 
     val session by repository.session.collectAsState()
     val levels by repository.allLevels.collectAsState(initial = emptyList())
     val skins by repository.allSkins.collectAsState(initial = emptyList())
+
+    val now = com.squishout.game.util.currentTimeMillis()
+    val canClaimDaily = session.lastClaimEpochDay != (now / (24 * 60 * 60 * 1000L))
+
+    androidx.compose.runtime.LaunchedEffect(canClaimDaily) {
+        if (canClaimDaily) {
+            isDailyRewardOpen = true
+        }
+    }
 
     SquishOutTheme {
         androidx.compose.foundation.layout.Box(modifier = androidx.compose.ui.Modifier.fillMaxSize()) {
@@ -65,7 +75,11 @@ fun App() {
                             },
                             onNavigateToShop = {
                                 isShopOpen = true
-                            }
+                            },
+                            onOpenDailyReward = {
+                                isDailyRewardOpen = true
+                            },
+                            canClaimDaily = canClaimDaily
                         )
                     }
 
@@ -114,6 +128,22 @@ fun App() {
                 onRefillHeartsGems = { viewModel.purchaseHeartRefill() },
                 onRefillHeartAd = { viewModel.reviveWithAd() },
                 onDismiss = { isShopOpen = false }
+            )
+
+            // Daily Streak Rewards Modal
+            com.squishout.game.ui.DailyRewardModal(
+                isVisible = isDailyRewardOpen,
+                currentStreakDay = session.loginStreakDays,
+                canClaimToday = canClaimDaily,
+                onClaimReward = {
+                    scope.launch {
+                        val reward = repository.claimDailyReward(com.squishout.game.util.currentTimeMillis())
+                        if (reward != null) {
+                            isDailyRewardOpen = false
+                        }
+                    }
+                },
+                onDismiss = { isDailyRewardOpen = false }
             )
         }
     }

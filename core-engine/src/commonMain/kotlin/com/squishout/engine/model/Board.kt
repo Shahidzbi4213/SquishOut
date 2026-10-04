@@ -83,6 +83,39 @@ data class Board(
         return copy(jellies = remaining).withUpdatedEyeStates()
     }
 
+    /**
+     * Damages any crackable obstacle (Ice Block or Honey Pot) adjacent to the specified positions.
+     * Obstacles reaching 0 health shatter and are removed from the board.
+     * Returns the updated board and the list of shattered obstacles.
+     */
+    fun damageObstaclesAdjacentTo(positions: Set<Position>): Pair<Board, List<Obstacle>> {
+        val shattered = mutableListOf<Obstacle>()
+        val updatedObstacles = obstacles.mapNotNull { obs ->
+            if (obs.isCrackable && isAdjacent(obs.position, positions)) {
+                val newHealth = obs.health - 1
+                if (newHealth <= 0) {
+                    shattered.add(obs)
+                    null // Shattered & cleared
+                } else {
+                    obs.copy(health = newHealth)
+                }
+            } else {
+                obs
+            }
+        }
+        val newBoard = copy(obstacles = updatedObstacles).withUpdatedEyeStates()
+        return newBoard to shattered
+    }
+
+    private fun isAdjacent(pos: Position, set: Set<Position>): Boolean {
+        for (other in set) {
+            val dx = kotlin.math.abs(pos.x - other.x)
+            val dy = kotlin.math.abs(pos.y - other.y)
+            if ((dx == 1 && dy == 0) || (dx == 0 && dy == 1)) return true
+        }
+        return false
+    }
+
     val awakeJellies: List<Jelly>
         get() = jellies.filter { it.eyeState == EyeState.AWAKE }
 

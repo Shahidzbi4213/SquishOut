@@ -29,4 +29,7 @@ interface UserSessionDao {
 
     @Query("UPDATE user_session SET hapticsEnabled = :enabled WHERE id = 1")
     suspend fun updateHapticsEnabled(enabled: Boolean)
+
+    @Query("UPDATE user_session SET loginStreakDays = :streak, lastClaimEpochDay = :epochDay WHERE id = 1")
+    suspend fun updateStreak(streak: Int, epochDay: Long)
 }

@@ -55,8 +55,14 @@ class ReverseAssemblyGenerator {
 
         val obstacleCount = config.obstacleCount.coerceAtMost(interiorPositions.size)
         for (i in 0 until obstacleCount) {
-            val type = if (i % 2 == 0) ObstacleType.ROCK_MOUNTAIN else ObstacleType.ROCK_TREE
-            obstacles.add(Obstacle("obs_$i", type, interiorPositions[i]))
+            val type = when {
+                config.stageNumber >= 20 && i % 3 == 0 -> ObstacleType.ICE_BLOCK
+                config.stageNumber >= 10 && i % 2 == 1 -> ObstacleType.HONEY_POT
+                i % 2 == 0 -> ObstacleType.ROCK_MOUNTAIN
+                else -> ObstacleType.ROCK_TREE
+            }
+            val health = if (type == ObstacleType.ICE_BLOCK) 2 else 1
+            obstacles.add(Obstacle("obs_$i", type, interiorPositions[i], health = health, maxHealth = health))
         }
 
         var board = Board(width = width, height = height, obstacles = obstacles)

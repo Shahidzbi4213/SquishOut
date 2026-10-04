@@ -39,11 +39,17 @@ data class Jelly(
 
 enum class ObstacleType(val symbol: String, val hexColor: String) {
     ROCK_MOUNTAIN("▲", "#4A5568"),
-    ROCK_TREE("♣", "#2D3748")
+    ROCK_TREE("♣", "#2D3748"),
+    ICE_BLOCK("❄", "#93C5FD"),
+    HONEY_POT("🍯", "#F59E0B")
 }
 
 data class Obstacle(
     val id: String,
     val type: ObstacleType,
-    val position: Position
-)
+    val position: Position,
+    val health: Int = 1,
+    val maxHealth: Int = 1
+) {
+    val isCrackable: Boolean get() = type == ObstacleType.ICE_BLOCK || type == ObstacleType.HONEY_POT
+}

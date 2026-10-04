@@ -103,4 +103,23 @@ class GameEngineTest {
         assertEquals("j2", removed.id)
         assertEquals(0, engine.state.value.wandCount)
     }
+
+    @Test
+    fun testAdjacentCrackableObstacleTakesDamageAndShatters() {
+        // j1 launches NORTH from (2, 2)
+        // ice block is adjacent at (1, 2) with health = 1
+        val j1 = Jelly("j1", JellyType.STRAWBERRY, Direction.NORTH, listOf(Position(2, 2)))
+        val ice = com.squishout.engine.model.Obstacle("ice_1", com.squishout.engine.model.ObstacleType.ICE_BLOCK, Position(1, 2), health = 1, maxHealth = 1)
+        val board = Board(jellies = listOf(j1), obstacles = listOf(ice)).withUpdatedEyeStates()
+        val level = Level(stageNumber = 20, initialBoard = board, optimalMoves = 1, targetScore = 500)
+
+        engine.loadLevel(level)
+        assertEquals(1, engine.state.value.board.obstacles.size)
+
+        val result = engine.onTileTapped(Position(2, 2))
+        assertIs<TapResult.Launched>(result)
+        assertEquals(1, result.shatteredObstacles.size)
+        assertEquals("ice_1", result.shatteredObstacles.first().id)
+        assertEquals(0, engine.state.value.board.obstacles.size)
+    }
 }

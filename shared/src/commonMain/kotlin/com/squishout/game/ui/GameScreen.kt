@@ -48,13 +48,14 @@ fun GameScreen(
     val session by viewModel.sessionState.collectAsState()
     val activeLaunches by viewModel.activeLaunches.collectAsState()
     val wobbleOffsets by viewModel.wobbleOffsets.collectAsState()
+    val biome = com.squishout.game.theme.BiomeTheme.forStage(gameState.stageNumber)
 
     var isSettingsOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     var isShopOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = SquishColors.BackgroundMint
+        containerColor = biome.backgroundTop
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -72,6 +73,7 @@ fun GameScreen(
                 GameHeader(
                     stage = gameState.stageNumber,
                     hearts = gameState.hearts,
+                    biome = biome,
                     onBack = onBackToMap,
                     onSettings = { isSettingsOpen = true }
                 )
@@ -84,6 +86,7 @@ fun GameScreen(
                     SkiaBoardView(
                         board = gameState.board,
                         highlightedJellyId = gameState.highlightedJellyId,
+                        stage = gameState.stageNumber,
                         activeLaunches = activeLaunches,
                         wobbleOffsets = wobbleOffsets,
                         onTileTapped = viewModel::onTileTapped
@@ -175,6 +178,7 @@ fun GameScreen(
 private fun GameHeader(
     stage: Int,
     hearts: Int,
+    biome: com.squishout.game.theme.BiomeTheme = com.squishout.game.theme.BiomeTheme.SWEET_MEADOW,
     onBack: () -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier
@@ -198,9 +202,9 @@ private fun GameHeader(
                     .padding(horizontal = 16.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = "• Stage $stage",
+                    text = "${biome.icon} Stage $stage",
                     style = SquishTypography.titleMedium,
-                    color = SquishColors.KiwiDark,
+                    color = biome.accentText,
                     fontWeight = FontWeight.ExtraBold
                 )
             }

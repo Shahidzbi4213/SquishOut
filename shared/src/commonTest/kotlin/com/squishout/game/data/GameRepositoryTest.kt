@@ -19,6 +19,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class FakeLevelDao : LevelDao {
@@ -110,6 +111,11 @@ class FakeUserSessionDao : UserSessionDao {
     override suspend fun updateHapticsEnabled(enabled: Boolean) {
         val cur = session.value ?: UserSessionEntity()
         session.value = cur.copy(hapticsEnabled = enabled)
+    }
+
+    override suspend fun updateStreak(streak: Int, epochDay: Long) {
+        val cur = session.value ?: UserSessionEntity()
+        session.value = cur.copy(loginStreakDays = streak, lastClaimEpochDay = epochDay)
     }
 }
 
@@ -249,5 +255,30 @@ class GameRepositoryTest {
         testScheduler.advanceUntilIdle()
         assertFalse(failedUnlock)
         assertEquals(50, repository.session.value.candies)
+    }
+
+    @Test
+    fun testDailyRewardClaimAndStreakProgression() = runTest(testDispatcher) {
+        testScheduler.advanceUntilIdle()
+        val day1Ms = 1700000000000L
+        val reward1 = repository.claimDailyReward(day1Ms)
+        testScheduler.advanceUntilIdle()
+        assertNotNull(reward1)
+        assertEquals(1, reward1.day)
+        assertEquals(50, reward1.candies)
+        assertEquals(200, repository.session.value.candies) // 150 + 50 = 200
+
+        // Same day claim must return null
+        val duplicateClaim = repository.claimDailyReward(day1Ms + 1000L)
+        testScheduler.advanceUntilIdle()
+        assertNull(duplicateClaim)
+
+        // Consecutive day claim -> Day 2 (+1 life)
+        val day2Ms = day1Ms + 24 * 60 * 60 * 1000L
+        val reward2 = repository.claimDailyReward(day2Ms)
+        testScheduler.advanceUntilIdle()
+        assertNotNull(reward2)
+        assertEquals(2, reward2.day)
+        assertEquals(2, repository.session.value.loginStreakDays)
     }
 }
