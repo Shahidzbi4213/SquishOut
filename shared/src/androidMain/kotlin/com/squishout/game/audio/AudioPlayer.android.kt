@@ -27,6 +27,7 @@ actual class AudioPlayer(private val context: Context) {
             tracks[SoundEffect.WOBBLE] = createTrack(generateWobble())
             tracks[SoundEffect.VICTORY] = createTrack(generateVictory())
             tracks[SoundEffect.BOOSTER] = createTrack(generateBooster())
+            tracks[SoundEffect.CRACK] = createTrack(generateCrack())
         } catch (_: Throwable) {
             // AudioTrack creation fallback
         }
@@ -137,6 +138,32 @@ actual class AudioPlayer(private val context: Context) {
         return buffer
     }
 
+    private fun generateCrack(): ShortArray {
+        val sampleRate = 44100
+        val durationSec = 0.08 // 80ms crisp crunch / fracture
+        val totalSamples = (sampleRate * durationSec).toInt()
+        val buffer = ShortArray(totalSamples)
+        var phase1 = 0.0
+        var phase2 = 0.0
+
+        for (i in 0 until totalSamples) {
+            val t = i.toDouble() / sampleRate
+            val progress = t / durationSec
+            // Dual frequency sweep: sharp high transient (1600Hz -> 300Hz) and body (600Hz -> 80Hz)
+            val freq1 = 1600.0 * (1.0 - progress * 0.8)
+            val freq2 = 600.0 * (1.0 - progress * 0.85)
+            phase1 += 2.0 * kotlin.math.PI * freq1 / sampleRate
+            phase2 += 2.0 * kotlin.math.PI * freq2 / sampleRate
+            // Steep exponential decay for glass/ice fracture sound
+            val envelope = kotlin.math.exp(-t * 55.0)
+            val noise = (((i * 1103515245 + 12345) and 0x7FFF) / 32768.0 - 0.5) * 0.4
+            val tone = kotlin.math.sin(phase1) * 0.65 + kotlin.math.sin(phase2) * 0.35
+            val sample = ((tone + noise) * envelope * 24000.0).toInt().coerceIn(-32767, 32767)
+            buffer[i] = sample.toShort()
+        }
+        return buffer
+    }
+
     actual fun playSound(sound: SoundEffect) {
         try {
             val track = tracks[sound] ?: return
@@ -148,17 +175,41 @@ actual class AudioPlayer(private val context: Context) {
         }
     }
 
-    actual fun triggerHaptic(isError: Boolean) {
+    actual fun triggerHaptic(type: HapticFeedbackType) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val effect = if (isError) {
-                VibrationEffect.createOneShot(80, VibrationEffect.DEFAULT_AMPLITUDE)
-            } else {
-                VibrationEffect.createOneShot(25, 120) // Crisp pop click
+            val effect = when (type) {
+                HapticFeedbackType.LIGHT_CLICK -> {
+                    VibrationEffect.createOneShot(25, 100)
+                }
+                HapticFeedbackType.ERROR_WOBBLE -> {
+                    VibrationEffect.createOneShot(80, 180)
+                }
+                HapticFeedbackType.CRACK_THUMP -> {
+                    // Double pulse: 30ms pulse, 40ms pause, 50ms pulse
+                    val timings = longArrayOf(0, 30, 40, 50)
+                    val amplitudes = intArrayOf(0, 160, 0, 220)
+                    VibrationEffect.createWaveform(timings, amplitudes, -1)
+                }
+                HapticFeedbackType.VICTORY_FANFARE -> {
+                    // Ascending triplet fanfare: 40ms, 60ms pause, 40ms, 60ms pause, 80ms
+                    val timings = longArrayOf(0, 40, 60, 40, 60, 80)
+                    val amplitudes = intArrayOf(0, 120, 0, 180, 0, 255)
+                    VibrationEffect.createWaveform(timings, amplitudes, -1)
+                }
             }
             vibrator?.vibrate(effect)
         } else {
             @Suppress("DEPRECATION")
-            vibrator?.vibrate(if (isError) 80 else 25)
+            when (type) {
+                HapticFeedbackType.LIGHT_CLICK -> vibrator?.vibrate(25)
+                HapticFeedbackType.ERROR_WOBBLE -> vibrator?.vibrate(80)
+                HapticFeedbackType.CRACK_THUMP -> vibrator?.vibrate(longArrayOf(0, 30, 40, 50), -1)
+                HapticFeedbackType.VICTORY_FANFARE -> vibrator?.vibrate(longArrayOf(0, 40, 60, 40, 60, 80), -1)
+            }
         }
+    }
+
+    actual fun triggerHaptic(isError: Boolean) {
+        triggerHaptic(if (isError) HapticFeedbackType.ERROR_WOBBLE else HapticFeedbackType.LIGHT_CLICK)
     }
 }

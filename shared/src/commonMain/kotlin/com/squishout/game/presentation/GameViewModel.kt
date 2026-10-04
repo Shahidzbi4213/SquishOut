@@ -14,10 +14,12 @@ import com.squishout.engine.generator.LevelConfig
 import com.squishout.engine.generator.ReverseAssemblyGenerator
 import com.squishout.engine.model.Position
 import com.squishout.game.audio.AudioPlayer
+import com.squishout.game.audio.HapticFeedbackType
 import com.squishout.game.audio.SoundEffect
 import com.squishout.game.board.LaunchAnimation
 import com.squishout.game.data.entity.UserSessionEntity
 import com.squishout.game.data.repository.GameRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -74,25 +76,36 @@ class GameViewModel(
         }
     }
 
-    private fun triggerHaptic(isError: Boolean = false) {
+    private fun triggerHaptic(type: HapticFeedbackType) {
         if (sessionState.value.hapticsEnabled) {
-            audioPlayer?.triggerHaptic(isError)
+            audioPlayer?.triggerHaptic(type)
         }
+    }
+
+    private fun triggerHaptic(isError: Boolean = false) {
+        triggerHaptic(if (isError) HapticFeedbackType.ERROR_WOBBLE else HapticFeedbackType.LIGHT_CLICK)
     }
 
     fun onTileTapped(pos: Position) {
         val result = engine.onTileTapped(pos)
         when (result) {
             is TapResult.Launched -> {
-                playSound(SoundEffect.POP)
-                triggerHaptic(isError = false)
+                if (result.shatteredObstacles.isNotEmpty()) {
+                    playSound(SoundEffect.CRACK)
+                    triggerHaptic(HapticFeedbackType.CRACK_THUMP)
+                } else {
+                    playSound(SoundEffect.POP)
+                    triggerHaptic(HapticFeedbackType.LIGHT_CLICK)
+                }
 
                 // Animate launch
                 animateLaunch(result)
 
                 if (result.isSolved) {
                     viewModelScope.launch {
+                        delay(200) // Brief dramatic pause for launch animation
                         playSound(SoundEffect.VICTORY)
+                        triggerHaptic(HapticFeedbackType.VICTORY_FANFARE)
                         val finalState = engine.state.value
                         repository?.recordLevelCompletion(
                             levelNumber = currentStage,
@@ -106,7 +119,7 @@ class GameViewModel(
             }
             is TapResult.Blocked -> {
                 playSound(SoundEffect.WOBBLE)
-                triggerHaptic(isError = true)
+                triggerHaptic(HapticFeedbackType.ERROR_WOBBLE)
                 animateWobble(result.jelly.id)
             }
             TapResult.EmptyTile, TapResult.GameOver -> {
@@ -167,7 +180,7 @@ class GameViewModel(
     fun useUndo() {
         if (engine.useUndo()) {
             playSound(SoundEffect.BOOSTER)
-            triggerHaptic(isError = false)
+            triggerHaptic(HapticFeedbackType.LIGHT_CLICK)
         }
     }
 
@@ -175,7 +188,7 @@ class GameViewModel(
         val hintId = engine.useHint()
         if (hintId != null) {
             playSound(SoundEffect.BOOSTER)
-            triggerHaptic(isError = false)
+            triggerHaptic(HapticFeedbackType.LIGHT_CLICK)
         }
     }
 
@@ -183,7 +196,7 @@ class GameViewModel(
         val removed = engine.useMagicWand()
         if (removed != null) {
             playSound(SoundEffect.POP)
-            triggerHaptic(isError = false)
+            triggerHaptic(HapticFeedbackType.LIGHT_CLICK)
         }
     }
 
@@ -212,7 +225,7 @@ class GameViewModel(
             if (repository?.spendCandies(50) == true) {
                 engine.addBoosters(undo = 3)
                 playSound(SoundEffect.BOOSTER)
-                triggerHaptic(false)
+                triggerHaptic(HapticFeedbackType.LIGHT_CLICK)
                 onSuccess()
             }
         }
@@ -223,7 +236,7 @@ class GameViewModel(
             if (repository?.spendCandies(75) == true) {
                 engine.addBoosters(hint = 3)
                 playSound(SoundEffect.BOOSTER)
-                triggerHaptic(false)
+                triggerHaptic(HapticFeedbackType.LIGHT_CLICK)
                 onSuccess()
             }
         }
@@ -234,7 +247,7 @@ class GameViewModel(
             if (repository?.spendCandies(100) == true) {
                 engine.addBoosters(wand = 1)
                 playSound(SoundEffect.BOOSTER)
-                triggerHaptic(false)
+                triggerHaptic(HapticFeedbackType.LIGHT_CLICK)
                 onSuccess()
             }
         }
@@ -245,7 +258,7 @@ class GameViewModel(
             if (repository?.reviveWithGems(10) == true) {
                 engine.refillHearts()
                 playSound(SoundEffect.BOOSTER)
-                triggerHaptic(false)
+                triggerHaptic(HapticFeedbackType.LIGHT_CLICK)
                 onSuccess()
             }
         }
@@ -256,7 +269,7 @@ class GameViewModel(
             if (repository?.reviveWithAd() == true) {
                 engine.refillHearts()
                 playSound(SoundEffect.BOOSTER)
-                triggerHaptic(false)
+                triggerHaptic(HapticFeedbackType.LIGHT_CLICK)
                 onSuccess()
             }
         }

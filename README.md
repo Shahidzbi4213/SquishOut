@@ -24,20 +24,38 @@
   - Dynamic reverse-slide puzzle generation with calibrated difficulty curves across 50 stages.
   - Multi-tile pieces (1x1 blobs and 1x2 Grape Eel Duo).
   - Raycasting exit path detection and greedy solver verification.
-- **🗺️ Saga Progression Map**:
+- **🏔️ Dynamic Biome Themes & Boss Obstacles**:
+  - Distinct ambient themes for *Sweet Meadow* (1–20), *Soda Lagoon* (21–40), and *Honeycomb Valley* (41+).
+  - Tray floor, porcelain rim borders, and ambient gradients dynamically adapt per biome.
+  - Interactive obstacles: *Mountain Rock*, *Sweet Meadow Tree*, *Frosted Ice Cube* (2 HP with Skia fracture crack lines), and *Honey Pot* (1 HP with dripping glaze).
+  - Launching jellies shatter adjacent obstacles, waking up trapped jellies and awarding bonus score.
+- **📳 Multi-Tier Haptics & Procedural Audio Engine**:
+  - Zero-asset procedural 16-bit PCM audio synthesis (`POP`, `WOBBLE`, `VICTORY`, `BOOSTER`, `CRACK`).
+  - Typed multi-tier haptic feedback patterns:
+    - `LIGHT_CLICK` (25ms) for standard unblock launch.
+    - `ERROR_WOBBLE` (80ms) for blocked taps.
+    - `CRACK_THUMP` (double pulse waveform) for obstacle fractures.
+    - `VICTORY_FANFARE` (triplet waveform / native Apple success) on stage completion.
+- **📱 Responsive Adaptive Layout & High-DPI Scaling**:
+  - Letterboxed aspect-ratio constraints (`widthIn(max = ...)`) across game canvas, saga map, and modals.
+  - Pixel-perfect Skia Canvas vector rendering with zero bitmap pixelation on Retina and high-DPI displays.
+  - Foldable and tablet-optimized ergonomic booster docks.
+- **🗺️ Saga Progression Map & Daily Streak**:
   - Vertical winding stepping-stone map featuring 50 handcrafted stages.
-  - Biome milestones: *🌸 Sweet Meadow* (Lv 1–20), *🌊 Soda Lagoon* (Lv 21–40), and *🍯 Honeycomb Valley* (Lv 41+).
+  - 7-day daily login streak calendar with escalating Candies, Gems, and Day 7 Mega Box.
   - Active stage marker with crowned mascot pin and `PLAY! ▶` pulsing badge.
 - **🐾 Jelly Dex & Companion Showcase**:
   - Hero mascot spotlight with floating pedestal glow and perk descriptions.
   - Collectible character cards: *Strawberry Blobby* (Common), *Blueberry Duo* (Common), *Lemon Spark* (Rare), *Kiwi Hopper* (Rare), *Grape Monarch* (Mythic).
   - Candy unlock and one-tap skin equipping.
-- **💾 Offline-First Room KMP Persistence**:
+- **💾 Offline-First Room KMP Persistence & Economy**:
   - Powered by AndroidX Room 2.8.5 with KSP symbol processing and `BundledSQLiteDriver`.
   - Tracks player currency (Candies & Gems), unlocked stages, and 1–3 star ratings.
   - Automatic heart regeneration timer: restores 1 life every 20 minutes (up to 5 max).
-- **⚡ Booster Dock & Modals**:
+  - In-game Booster Shop: purchase Undos, Hints, Magic Wands, and Heart refills.
+- **⚡ Celebratory Modals & Settings**:
   - Floating frosted capsule booster dock: `Undo`, `Hint`, and `Magic Wand`.
+  - **Settings & Pause Modal** with live sound/haptic toggles, stage restart, and map navigation.
   - Celebratory **Level Victory Modal** with 3D embossed stars, score recap, and lightweight Canvas confetti particle bursts.
   - Empathy-driven **Out of Hearts Modal** featuring a teary sad blue mascot, rewarded ad continue (`+3 ❤️`), and gem revive options.
 

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -60,6 +61,7 @@ fun VictoryModal(
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.85f)
+                .widthIn(max = 420.dp)
                 .shadow(24.dp, RoundedCornerShape(32.dp)),
             shape = RoundedCornerShape(32.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White)

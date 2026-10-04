@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -81,9 +82,15 @@ fun JellyDexScreen(
                         Color(0xFFFFF7ED)  // Warm Cream
                     )
                 )
-            )
+            ),
+        contentAlignment = Alignment.Center
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .widthIn(max = 600.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             // Header
             DexHeader(session = session, skinsCount = skins.count { it.isUnlocked }, totalCount = skins.size)
 
