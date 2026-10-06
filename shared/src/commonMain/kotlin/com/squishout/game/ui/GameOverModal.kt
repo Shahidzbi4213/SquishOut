@@ -13,6 +13,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -29,8 +30,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -43,19 +42,33 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.squishout.game.theme.AmberGlow
 import com.squishout.game.theme.BlueberryBase
 import com.squishout.game.theme.BlueberryGloss
 import com.squishout.game.theme.CoralHeart
-import com.squishout.game.theme.EmeraldMint
-import com.squishout.game.theme.FrostedWhite
 import com.squishout.game.theme.SlateCharcoal
+import com.squishout.game.ui.components.CandyHeartsView
+import com.squishout.game.ui.components.ModalButtonVariant
+import com.squishout.game.ui.components.ModalExtrudedButton
+import com.squishout.game.ui.components.ModalPlayIcon
+import com.squishout.game.ui.components.ModalRestartIcon
 
+/**
+ * Casual Game 3D Game Over / Out of Hearts Modal.
+ * Rebuilt as a glazed ceramic porcelain plaque with:
+ * - Empathy-driven sad blue mascot with tear and band-aid animations
+ * - 3D candy empty hearts tray
+ * - Tactile 3D extruded push buttons for Free Rewarded Ad Continue and Gem Revive
+ * - Corner brass rivets and ambient dark backdrop scrim
+ */
 @Composable
 fun GameOverModal(
     isVisible: Boolean,
@@ -66,161 +79,151 @@ fun GameOverModal(
 ) {
     AnimatedVisibility(
         visible = isVisible,
-        enter = fadeIn(tween(250)) + scaleIn(tween(300, easing = FastOutSlowInEasing), initialScale = 0.85f),
-        exit = fadeOut(tween(200)) + scaleOut(tween(250), targetScale = 0.85f),
+        enter = fadeIn(tween(220)) + scaleIn(tween(260, easing = FastOutSlowInEasing), initialScale = 0.88f),
+        exit = fadeOut(tween(180)) + scaleOut(tween(200), targetScale = 0.90f),
         modifier = modifier
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.65f))
+                // Ambient Dark Backdrop Scrim
+                .background(Color(0xFF1E0E14).copy(alpha = 0.68f))
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
                 ) {},
             contentAlignment = Alignment.Center
         ) {
-            Card(
-                shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(containerColor = FrostedWhite),
+            // Ambient Coral Glow Halo
+            Box(
+                modifier = Modifier
+                    .size(360.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                Color(0xFFF43F5E).copy(alpha = 0.16f),
+                                Color(0xFFFB7185).copy(alpha = 0.08f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
+
+            // Porcelain Plaque Container
+            val plaqueShape = RoundedCornerShape(32.dp)
+
+            Box(
                 modifier = Modifier
                     .fillMaxWidth(0.88f)
-                    .widthIn(max = 420.dp)
-                    .shadow(24.dp, RoundedCornerShape(32.dp))
+                    .widthIn(max = 400.dp)
+                    .shadow(18.dp, plaqueShape, spotColor = Color(0xFF4A1020))
+                    .clip(plaqueShape)
+                    // 3D bottom wood/caramel rim bevel
+                    .background(Color(0xFF8D4F0E))
+                    .padding(bottom = 5.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp)
+                // Plaque Face with glazed cream porcelain gradient
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp, bottomStart = 27.dp, bottomEnd = 27.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color(0xFFFFFDF8),
+                                    Color(0xFFFBF4E8),
+                                    Color(0xFFF5E8D6)
+                                )
+                            )
+                        )
+                        .border(
+                            width = 1.5.dp,
+                            color = Color(0xFFFFE8D1),
+                            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp, bottomStart = 27.dp, bottomEnd = 27.dp)
+                        )
+                        .padding(horizontal = 22.dp, vertical = 26.dp)
                 ) {
-                    // Sad Mascot Canvas
-                    SadMascotBlob(modifier = Modifier.size(110.dp))
+                    // Corner Brass Rivets
+                    Box(modifier = Modifier.align(Alignment.TopStart).padding(4.dp)) { GameOverBrassRivet() }
+                    Box(modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)) { GameOverBrassRivet() }
+                    Box(modifier = Modifier.align(Alignment.BottomStart).padding(4.dp)) { GameOverBrassRivet() }
+                    Box(modifier = Modifier.align(Alignment.BottomEnd).padding(4.dp)) { GameOverBrassRivet() }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = "OUT OF HEARTS!",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Black,
-                        color = CoralHeart,
-                        letterSpacing = 0.5.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Text(
-                        text = "The jellies got squished!\nDon't leave them trapped in the tray!",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = SlateCharcoal.copy(alpha = 0.7f),
-                        textAlign = TextAlign.Center,
-                        lineHeight = 18.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(18.dp))
-
-                    // 3 Empty Hearts
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        repeat(3) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFE2E8F0)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(text = "🤍", fontSize = 18.sp)
-                            }
-                        }
-                    }
+                        // 1. Sad Droopy Mascot Blob with animated tear
+                        SadMascotBlob(modifier = Modifier.size(105.dp))
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
-                    // Ad Revive Button (+3 Hearts)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .shadow(8.dp, RoundedCornerShape(28.dp), spotColor = EmeraldMint)
-                            .clip(RoundedCornerShape(28.dp))
-                            .background(
-                                Brush.horizontalGradient(
-                                    listOf(Color(0xFF10B981), Color(0xFF059669))
+                        // 2. Headline with Warm 3D Relief Shadow
+                        Text(
+                            text = "OUT OF HEARTS!",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Black,
+                            color = CoralHeart,
+                            letterSpacing = 0.5.sp,
+                            style = TextStyle(
+                                shadow = Shadow(
+                                    color = Color(0x33FB7185),
+                                    offset = Offset(0f, 3f),
+                                    blurRadius = 2f
                                 )
                             )
-                            .clickable { onReviveWithAd() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = "The jellies got squished!\nDon't leave them trapped in the tray!",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = SlateCharcoal.copy(alpha = 0.75f),
+                            textAlign = TextAlign.Center,
+                            lineHeight = 18.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // 3. Candy Empty Hearts Tray
+                        CandyHeartsView(hearts = 0, maxHearts = 3)
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // 4. Action Buttons
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(text = "▶", fontSize = 16.sp, color = Color.White)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column(horizontalAlignment = Alignment.Start) {
-                                Text(
-                                    text = "CONTINUE WITH +3 ❤️",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color.White
-                                )
-                                Text(
-                                    text = "FREE REWARDED AD",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White.copy(alpha = 0.85f)
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Gem Revive Button
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                            .shadow(6.dp, RoundedCornerShape(25.dp), spotColor = AmberGlow)
-                            .clip(RoundedCornerShape(25.dp))
-                            .background(
-                                Brush.horizontalGradient(
-                                    listOf(Color(0xFFF59E0B), Color(0xFFD97706))
-                                )
+                            // Primary Ad Revive (+3 Hearts)
+                            ModalExtrudedButton(
+                                text = "CONTINUE (+3 ❤️)",
+                                variant = ModalButtonVariant.EMERALD,
+                                onClick = onReviveWithAd,
+                                leadingIcon = { ModalPlayIcon() }
                             )
-                            .clickable { onReviveWithGems() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Text(text = "💎", fontSize = 16.sp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "10 GEMS TO REVIVE",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
+
+                            // Gem Revive (10 Gems)
+                            ModalExtrudedButton(
+                                text = "REVIVE (10 GEMS)",
+                                variant = ModalButtonVariant.CREAM,
+                                onClick = onReviveWithGems,
+                                leadingIcon = { GemFacetedIcon() }
+                            )
+
+                            // Give Up & Restart
+                            ModalExtrudedButton(
+                                text = "Give Up & Restart",
+                                variant = ModalButtonVariant.CORAL,
+                                onClick = onRestart,
+                                leadingIcon = { ModalRestartIcon(color = Color(0xFFB91C1C)) }
                             )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Restart Level CTA
-                    Text(
-                        text = "⟲ Give Up & Restart",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = SlateCharcoal.copy(alpha = 0.55f),
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { onRestart() }
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
                 }
             }
         }
@@ -229,20 +232,21 @@ fun GameOverModal(
 
 @Composable
 private fun SadMascotBlob(modifier: Modifier = Modifier) {
-    val infiniteTransition = rememberInfiniteTransition()
+    val infiniteTransition = rememberInfiniteTransition(label = "TearTransition")
     val tearDrop by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
+            animation = tween(1400, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Restart
-        )
+        ),
+        label = "TearDrop"
     )
 
     Canvas(modifier = modifier) {
         val cx = size.width / 2f
         val cy = size.height / 2f
-        val radius = size.width * 0.42f
+        val radius = size.width * 0.40f
 
         // Shadow beneath
         drawOval(
@@ -256,7 +260,7 @@ private fun SadMascotBlob(modifier: Modifier = Modifier) {
             brush = Brush.radialGradient(
                 colors = listOf(BlueberryGloss, BlueberryBase, Color(0xFF1E3A8A)),
                 center = Offset(cx - radius * 0.25f, cy - radius * 0.25f),
-                radius = radius * 1.2f
+                radius = radius * 1.25f
             ),
             radius = radius,
             center = Offset(cx, cy)
@@ -303,7 +307,7 @@ private fun SadMascotBlob(modifier: Modifier = Modifier) {
 }
 
 private fun DrawScope.drawSadMouth(cx: Float, cy: Float, radius: Float) {
-    val path = androidx.compose.ui.graphics.Path().apply {
+    val path = Path().apply {
         moveTo(cx - radius, cy + radius * 0.3f)
         quadraticTo(cx, cy - radius * 0.4f, cx + radius, cy + radius * 0.3f)
     }
@@ -328,10 +332,52 @@ private fun DrawScope.drawBandAid(x: Float, y: Float, size: Float) {
         size = rect.size,
         cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f)
     )
-    // Small cross stitch
     drawCircle(
         color = Color(0xFFF59E0B),
         radius = 2.5f,
         center = Offset(x, y)
     )
+}
+
+@Composable
+private fun GemFacetedIcon() {
+    Canvas(modifier = Modifier.size(18.dp)) {
+        val w = size.width
+        val h = size.height
+
+        val gemPath = Path().apply {
+            moveTo(w * 0.25f, h * 0.15f)
+            lineTo(w * 0.75f, h * 0.15f)
+            lineTo(w * 0.95f, h * 0.45f)
+            lineTo(w * 0.50f, h * 0.92f)
+            lineTo(w * 0.05f, h * 0.45f)
+            close()
+        }
+        drawPath(
+            path = gemPath,
+            brush = Brush.verticalGradient(
+                colors = listOf(Color(0xFF67E8F9), Color(0xFF06B6D4), Color(0xFF0891B2))
+            ),
+            style = Fill
+        )
+    }
+}
+
+@Composable
+private fun GameOverBrassRivet() {
+    Canvas(modifier = Modifier.size(8.dp)) {
+        val radius = size.minDimension / 2f
+        val center = Offset(size.width / 2f, size.height / 2f)
+
+        drawCircle(color = Color(0xFF6D3804), radius = radius, center = center)
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(Color(0xFFFFFDE7), Color(0xFFFFD54F), Color(0xFFD97706)),
+                center = Offset(center.x - radius * 0.25f, center.y - radius * 0.25f),
+                radius = radius * 0.9f
+            ),
+            radius = radius * 0.82f,
+            center = center
+        )
+    }
 }
