@@ -155,7 +155,9 @@ fun GameScreen(
                 onExitToMap = {
                     isSettingsOpen = false
                     onBackToMap()
-                }
+                },
+                stage = gameState.stageNumber,
+                hearts = gameState.hearts
             )
 
             // 7. Booster Shop Modal Overlay
