@@ -119,11 +119,16 @@ class GameEngine {
                 shatteredObstacles = shattered
             )
         } else {
-            // 2. Blocked -> Wobble refusal and deduce heart if illegal tap penalty applies
+            // 2. Blocked -> Wobble refusal and deduce heart
             val blocker = findFirstBlocker(jelly, current.board)
-            val newHearts = current.hearts // We don't deduct hearts on simple inspection tap, only on dedicated moves
+            val newHearts = (current.hearts - 1).coerceAtLeast(0)
+            val isGameOver = newHearts <= 0
             _state.update { prev ->
-                prev.copy(highlightedJellyId = null)
+                prev.copy(
+                    hearts = newHearts,
+                    isGameOver = isGameOver,
+                    highlightedJellyId = null
+                )
             }
             TapResult.Blocked(jelly = jelly, blockerPosition = blocker)
         }

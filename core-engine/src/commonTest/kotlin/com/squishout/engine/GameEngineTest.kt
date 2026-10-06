@@ -122,4 +122,21 @@ class GameEngineTest {
         assertEquals("ice_1", result.shatteredObstacles.first().id)
         assertEquals(0, engine.state.value.board.obstacles.size)
     }
+
+    @Test
+    fun testStage2Board() {
+        val gen = com.squishout.engine.generator.ReverseAssemblyGenerator()
+        val config = com.squishout.engine.generator.LevelConfig(
+            stageNumber = 2,
+            jellyCount = 12,
+            obstacleCount = 0,
+            includeMultiCell = false,
+            seed = 2042L
+        )
+        val level = gen.generate(config)
+        println("=== STAGE 2 BOARD ===")
+        for (j in level.initialBoard.jellies) {
+            println("Jelly: id=${j.id}, type=${j.type}, dir=${j.direction}, tiles=${j.tiles}, eye=${j.eyeState}")
+        }
+    }
 }

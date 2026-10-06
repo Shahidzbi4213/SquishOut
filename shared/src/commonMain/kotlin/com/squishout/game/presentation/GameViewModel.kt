@@ -126,17 +126,8 @@ class GameViewModel(
 
     private fun animateLaunch(result: TapResult.Launched) {
         viewModelScope.launch {
-            val tileSize = 60f // Logical unit
-            val minX = result.jelly.tiles.minOf { it.x }
-            val minY = result.jelly.tiles.minOf { it.y }
-            val start = Offset(minX * tileSize, minY * tileSize)
-            val distance = tileSize * 8f // Fly well off board
-
             val anim = LaunchAnimation(
                 jelly = result.jelly,
-                startOffset = start,
-                exitDirection = result.jelly.direction,
-                distance = distance,
                 progress = 0f
             )
 
@@ -282,5 +273,10 @@ class GameViewModel(
                 onPurchased()
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        audioPlayer?.release()
     }
 }

@@ -26,6 +26,9 @@ import com.squishout.engine.model.Board
 import com.squishout.engine.model.Direction
 import com.squishout.engine.model.Jelly
 import com.squishout.engine.model.Position
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.sin
 
@@ -36,9 +39,11 @@ fun SkiaBoardView(
     onTileTapped: (Position) -> Unit,
     modifier: Modifier = Modifier,
     stage: Int = 1,
-    activeLaunches: List<LaunchAnimation> = emptyList(),
-    wobbleOffsets: Map<String, Float> = emptyMap()
+    activeLaunchesFlow: StateFlow<List<LaunchAnimation>>? = null,
+    wobbleOffsetsFlow: StateFlow<Map<String, Float>>? = null
 ) {
+    val activeLaunches by (activeLaunchesFlow?.collectAsState() ?: remember { androidx.compose.runtime.mutableStateOf(emptyList()) })
+    val wobbleOffsets by (wobbleOffsetsFlow?.collectAsState() ?: remember { androidx.compose.runtime.mutableStateOf(emptyMap()) })
     val biome = com.squishout.game.theme.BiomeTheme.forStage(stage)
 
     BoxWithConstraints(
@@ -66,6 +71,9 @@ fun SkiaBoardView(
                         val localX = tapOffset.x - trayPadding
                         val localY = tapOffset.y - trayPadding
 
+                        // Guard against bezel taps outside grid area
+                        if (localX < 0f || localY < 0f) return@detectTapGestures
+
                         val col = (localX / tileSize).toInt()
                         val row = (localY / tileSize).toInt()
 
@@ -75,6 +83,9 @@ fun SkiaBoardView(
                     }
                 }
         ) {
+            val currentLaunches = activeLaunches
+            val currentWobbles = wobbleOffsets
+
             // 1. Draw Glazed Porcelain Tray & Recessed Inset Wells with Biome Accent
             TrayRenderer.drawTray(
                 drawScope = this,
@@ -103,7 +114,7 @@ fun SkiaBoardView(
                     trayPadding + minY * tileSize + tileSize * 0.08f
                 )
 
-                val wobble = wobbleOffsets[jelly.id] ?: 0f
+                val wobble = currentWobbles[jelly.id] ?: 0f
                 val wobbleX = if (jelly.direction == Direction.EAST || jelly.direction == Direction.WEST) wobble * tileSize * 0.12f else 0f
                 val wobbleY = if (jelly.direction == Direction.NORTH || jelly.direction == Direction.SOUTH) wobble * tileSize * 0.12f else 0f
 
@@ -118,16 +129,30 @@ fun SkiaBoardView(
                 )
             }
 
-            // 4. Draw Active Launching Jellies (Physics & Squish-and-Stretch)
-            for (launch in activeLaunches) {
-                val isHorizontal = launch.exitDirection == Direction.EAST || launch.exitDirection == Direction.WEST
+            // 4. Draw Active Launching Jellies (Smooth Physics & Squish-and-Stretch)
+            for (launch in currentLaunches) {
+                val minX = launch.jelly.tiles.minOf { it.x }
+                val minY = launch.jelly.tiles.minOf { it.y }
+                val startX = trayPadding + minX * tileSize + tileSize * 0.08f
+                val startY = trayPadding + minY * tileSize + tileSize * 0.08f
+
+                val maxDimension = maxOf(board.width, board.height)
+                val exitDistance = tileSize * (maxDimension + 4f)
+                val traveled = exitDistance * launch.easedProgress
+
+                val currentOffset = Offset(
+                    startX + launch.jelly.direction.dx * traveled,
+                    startY + launch.jelly.direction.dy * traveled
+                )
+
+                val isHorizontal = launch.jelly.direction == Direction.EAST || launch.jelly.direction == Direction.WEST
                 val scaleX = if (isHorizontal) launch.scaleAlongDir else launch.scalePerpendicular
                 val scaleY = if (isHorizontal) launch.scalePerpendicular else launch.scaleAlongDir
 
                 JellyRenderer.drawJelly(
                     drawScope = this,
                     jelly = launch.jelly,
-                    topLeft = launch.currentOffset,
+                    topLeft = currentOffset,
                     tileSize = tileSize,
                     scaleX = scaleX,
                     scaleY = scaleY,

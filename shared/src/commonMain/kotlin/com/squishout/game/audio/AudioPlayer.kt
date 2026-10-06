@@ -19,5 +19,6 @@ expect class AudioPlayer {
     fun playSound(sound: SoundEffect)
     fun triggerHaptic(type: HapticFeedbackType)
     fun triggerHaptic(isError: Boolean = false)
+    fun release()
 }
 

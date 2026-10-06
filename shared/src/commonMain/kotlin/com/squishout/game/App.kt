@@ -55,6 +55,10 @@ fun App() {
         }
     }
 
+    com.squishout.game.util.PlatformBackHandler(enabled = currentScreen != AppScreen.SAGA_MAP) {
+        currentScreen = AppScreen.SAGA_MAP
+    }
+
     SquishOutTheme {
         androidx.compose.foundation.layout.Box(modifier = androidx.compose.ui.Modifier.fillMaxSize()) {
             AnimatedContent(

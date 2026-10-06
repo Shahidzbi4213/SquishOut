@@ -43,4 +43,8 @@ actual class AudioPlayer {
     actual fun triggerHaptic(isError: Boolean) {
         triggerHaptic(if (isError) HapticFeedbackType.ERROR_WOBBLE else HapticFeedbackType.LIGHT_CLICK)
     }
+
+    actual fun release() {
+        // No-op on iOS
+    }
 }

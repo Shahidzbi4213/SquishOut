@@ -30,7 +30,12 @@ data class Jelly(
     }
 
     val headPosition: Position
-        get() = tiles.first()
+        get() = when (direction) {
+            Direction.NORTH -> tiles.minByOrNull { it.y } ?: tiles.first()
+            Direction.SOUTH -> tiles.maxByOrNull { it.y } ?: tiles.first()
+            Direction.WEST -> tiles.minByOrNull { it.x } ?: tiles.first()
+            Direction.EAST -> tiles.maxByOrNull { it.x } ?: tiles.first()
+        }
 
     fun occupies(pos: Position): Boolean = pos in tiles
 

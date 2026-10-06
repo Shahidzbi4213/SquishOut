@@ -6,20 +6,10 @@ import com.squishout.engine.model.Jelly
 
 data class LaunchAnimation(
     val jelly: Jelly,
-    val startOffset: Offset,
-    val exitDirection: Direction,
-    val distance: Float,
     val progress: Float = 0f
 ) {
-    val currentOffset: Offset
-        get() {
-            val easeOutQuad = 1f - (1f - progress) * (1f - progress)
-            val traveled = distance * easeOutQuad
-            return Offset(
-                startOffset.x + exitDirection.dx * traveled,
-                startOffset.y + exitDirection.dy * traveled
-            )
-        }
+    val easedProgress: Float
+        get() = 1f - (1f - progress) * (1f - progress)
 
     val scaleAlongDir: Float
         get() = when {

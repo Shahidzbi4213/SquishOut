@@ -3,8 +3,6 @@ package com.squishout.game.ui
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,12 +12,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -28,16 +22,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.squishout.engine.model.EyeState
 import com.squishout.game.board.SkiaBoardView
 import com.squishout.game.presentation.GameViewModel
-import com.squishout.game.theme.SquishColors
-import com.squishout.game.theme.SquishTypography
+import com.squishout.game.theme.BiomeTheme
+import com.squishout.game.ui.components.AwakeStatusChip
+import com.squishout.game.ui.components.CandyHeartsView
+import com.squishout.game.ui.components.GameIconType
+import com.squishout.game.ui.components.GameTactileButton
+import com.squishout.game.ui.components.StageHeaderPlaque
 
 @Composable
 fun GameScreen(
@@ -47,12 +41,10 @@ fun GameScreen(
 ) {
     val gameState by viewModel.gameState.collectAsState()
     val session by viewModel.sessionState.collectAsState()
-    val activeLaunches by viewModel.activeLaunches.collectAsState()
-    val wobbleOffsets by viewModel.wobbleOffsets.collectAsState()
-    val biome = com.squishout.game.theme.BiomeTheme.forStage(gameState.stageNumber)
+    val biome = BiomeTheme.forStage(gameState.stageNumber)
 
-    var isSettingsOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-    var isShopOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var isSettingsOpen by remember { mutableStateOf(false) }
+    var isShopOpen by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -72,7 +64,7 @@ fun GameScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // 1. Clean Top Header
+                // 1. Game Arcade Top Header
                 GameHeader(
                     stage = gameState.stageNumber,
                     hearts = gameState.hearts,
@@ -90,17 +82,22 @@ fun GameScreen(
                         board = gameState.board,
                         highlightedJellyId = gameState.highlightedJellyId,
                         stage = gameState.stageNumber,
-                        activeLaunches = activeLaunches,
-                        wobbleOffsets = wobbleOffsets,
+                        activeLaunchesFlow = viewModel.activeLaunches,
+                        wobbleOffsetsFlow = viewModel.wobbleOffsets,
                         onTileTapped = viewModel::onTileTapped
                     )
                 }
 
-                // 3. Ergonomic Bottom Booster Dock
+                // 3. Ergonomic Bottom Booster Dock & Awake Status Chip
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(bottom = 16.dp)
                 ) {
+                    val awakeCount = remember(gameState.board.jellies) {
+                        gameState.board.jellies.count { it.eyeState == EyeState.AWAKE }
+                    }
+                    AwakeStatusChip(awakeCount = awakeCount)
+                    Spacer(modifier = Modifier.height(10.dp))
                     BoosterDock(
                         undoCount = gameState.undoCount,
                         hintCount = gameState.hintCount,
@@ -181,75 +178,48 @@ fun GameScreen(
 private fun GameHeader(
     stage: Int,
     hearts: Int,
-    biome: com.squishout.game.theme.BiomeTheme = com.squishout.game.theme.BiomeTheme.SWEET_MEADOW,
+    biome: BiomeTheme = BiomeTheme.SWEET_MEADOW,
     onBack: () -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Back / Pause button
-        HeaderIconButton(icon = "←", onClick = onBack)
-
-        // Center Stage & Hearts
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color.White)
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-            ) {
-                Text(
-                    text = "${biome.icon} Stage $stage",
-                    style = SquishTypography.titleMedium,
-                    color = biome.accentText,
-                    fontWeight = FontWeight.ExtraBold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // 3 Hearts
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                for (i in 1..3) {
-                    Text(
-                        text = if (i <= hearts) "❤️" else "🤍",
-                        fontSize = 13.sp
-                    )
-                }
-            }
-        }
-
-        // Settings gear button
-        HeaderIconButton(icon = "⚙", onClick = onSettings)
-    }
-}
-
-@Composable
-private fun HeaderIconButton(
-    icon: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
     Box(
         modifier = modifier
-            .size(44.dp)
-            .shadow(4.dp, CircleShape)
-            .clip(CircleShape)
-            .background(Color.White)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 2.dp)
     ) {
-        Text(
-            text = icon,
-            fontSize = 18.sp,
-            color = SquishColors.TextPrimary,
-            fontWeight = FontWeight.Bold
+        // Center Golden-Wood Plaque & 3D Candy Hearts
+        Column(
+            modifier = Modifier.align(Alignment.TopCenter),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            StageHeaderPlaque(
+                stage = stage,
+                biome = biome
+            )
+            CandyHeartsView(
+                hearts = hearts,
+                maxHearts = 3
+            )
+        }
+
+        // Back / Pause 3D tactile button (aligned with StageHeaderPlaque center)
+        GameTactileButton(
+            iconType = GameIconType.BACK,
+            onClick = onBack,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(top = 2.dp)
+        )
+
+        // Settings 3D tactile gear button (aligned with StageHeaderPlaque center)
+        GameTactileButton(
+            iconType = GameIconType.SETTINGS,
+            onClick = onSettings,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 2.dp)
         )
     }
 }

@@ -216,4 +216,14 @@ actual class AudioPlayer(private val context: Context) {
     actual fun triggerHaptic(isError: Boolean) {
         triggerHaptic(if (isError) HapticFeedbackType.ERROR_WOBBLE else HapticFeedbackType.LIGHT_CLICK)
     }
+
+    actual fun release() {
+        tracks.values.forEach { track ->
+            try {
+                track.stop()
+                track.release()
+            } catch (_: Throwable) {}
+        }
+        tracks.clear()
+    }
 }
