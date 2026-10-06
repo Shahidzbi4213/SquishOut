@@ -96,7 +96,16 @@ fun SkiaBoardView(
                 biome = biome
             )
 
-            // 2. Draw Obstacles
+            // 2. Draw Water Jets (90° Trajectory Deflector Conveyors)
+            for (jet in board.waterJets) {
+                val topLeft = Offset(
+                    trayPadding + jet.position.x * tileSize + tileSize * 0.08f,
+                    trayPadding + jet.position.y * tileSize + tileSize * 0.08f
+                )
+                TrayRenderer.drawWaterJet(this, jet, topLeft, tileSize)
+            }
+
+            // 3. Draw Obstacles
             for (obs in board.obstacles) {
                 val topLeft = Offset(
                     trayPadding + obs.position.x * tileSize + tileSize * 0.08f,
@@ -105,7 +114,33 @@ fun SkiaBoardView(
                 TrayRenderer.drawObstacle(this, obs, topLeft, tileSize)
             }
 
-            // 3. Draw Stationary Jellies on the Board
+            // 4. Draw Symbiotic Schooling Pair Tethers
+            val drawnTethers = mutableSetOf<String>()
+            for (jelly in board.jellies) {
+                val partnerId = jelly.linkedJellyId ?: continue
+                val pairKey = if (jelly.id < partnerId) "${jelly.id}_$partnerId" else "${partnerId}_${jelly.id}"
+                if (pairKey in drawnTethers) continue
+                drawnTethers.add(pairKey)
+
+                val partner = board.getJellyById(partnerId) ?: continue
+                val c1 = Offset(
+                    trayPadding + jelly.tiles.first().x * tileSize + tileSize / 2f,
+                    trayPadding + jelly.tiles.first().y * tileSize + tileSize / 2f
+                )
+                val c2 = Offset(
+                    trayPadding + partner.tiles.first().x * tileSize + tileSize / 2f,
+                    trayPadding + partner.tiles.first().y * tileSize + tileSize / 2f
+                )
+                JellyRenderer.drawCandyTether(
+                    drawScope = this,
+                    p1 = c1,
+                    p2 = c2,
+                    tileSize = tileSize,
+                    isAwake = jelly.eyeState == com.squishout.engine.model.EyeState.AWAKE
+                )
+            }
+
+            // 5. Draw Stationary Jellies on the Board
             for (jelly in board.jellies) {
                 val minX = jelly.tiles.minOf { it.x }
                 val minY = jelly.tiles.minOf { it.y }
@@ -129,23 +164,55 @@ fun SkiaBoardView(
                 )
             }
 
-            // 4. Draw Active Launching Jellies (Smooth Physics & Squish-and-Stretch)
+            // 6. Draw Active Launching Jellies (Smooth Physics & Trajectory Deflection)
             for (launch in currentLaunches) {
-                val minX = launch.jelly.tiles.minOf { it.x }
-                val minY = launch.jelly.tiles.minOf { it.y }
-                val startX = trayPadding + minX * tileSize + tileSize * 0.08f
-                val startY = trayPadding + minY * tileSize + tileSize * 0.08f
+                val isDeflected = launch.exitPath.size >= 2
+                val currentOffset: Offset
+                val currentDir: Direction
 
-                val maxDimension = maxOf(board.width, board.height)
-                val exitDistance = tileSize * (maxDimension + 4f)
-                val traveled = exitDistance * launch.easedProgress
+                if (isDeflected) {
+                    val totalSegments = (launch.exitPath.size - 1).coerceAtLeast(1)
+                    val rawIndex = launch.easedProgress * totalSegments
+                    val segIndex = rawIndex.toInt().coerceIn(0, totalSegments - 1)
+                    val subProgress = (rawIndex - segIndex).coerceIn(0f, 1f)
 
-                val currentOffset = Offset(
-                    startX + launch.jelly.direction.dx * traveled,
-                    startY + launch.jelly.direction.dy * traveled
-                )
+                    val p1 = launch.exitPath[segIndex]
+                    val p2 = launch.exitPath[minOf(segIndex + 1, launch.exitPath.size - 1)]
 
-                val isHorizontal = launch.jelly.direction == Direction.EAST || launch.jelly.direction == Direction.WEST
+                    val interpX = p1.x + (p2.x - p1.x) * subProgress
+                    val interpY = p1.y + (p2.y - p1.y) * subProgress
+
+                    currentOffset = Offset(
+                        trayPadding + interpX * tileSize + tileSize * 0.08f,
+                        trayPadding + interpY * tileSize + tileSize * 0.08f
+                    )
+
+                    val dx = p2.x - p1.x
+                    val dy = p2.y - p1.y
+                    currentDir = when {
+                        dx > 0 -> Direction.EAST
+                        dx < 0 -> Direction.WEST
+                        dy > 0 -> Direction.SOUTH
+                        else -> Direction.NORTH
+                    }
+                } else {
+                    val minX = launch.jelly.tiles.minOf { it.x }
+                    val minY = launch.jelly.tiles.minOf { it.y }
+                    val startX = trayPadding + minX * tileSize + tileSize * 0.08f
+                    val startY = trayPadding + minY * tileSize + tileSize * 0.08f
+
+                    val maxDimension = maxOf(board.width, board.height)
+                    val exitDistance = tileSize * (maxDimension + 4f)
+                    val traveled = exitDistance * launch.easedProgress
+
+                    currentOffset = Offset(
+                        startX + launch.jelly.direction.dx * traveled,
+                        startY + launch.jelly.direction.dy * traveled
+                    )
+                    currentDir = launch.jelly.direction
+                }
+
+                val isHorizontal = currentDir == Direction.EAST || currentDir == Direction.WEST
                 val scaleX = if (isHorizontal) launch.scaleAlongDir else launch.scalePerpendicular
                 val scaleY = if (isHorizontal) launch.scalePerpendicular else launch.scaleAlongDir
 
@@ -158,6 +225,15 @@ fun SkiaBoardView(
                     scaleY = scaleY,
                     alpha = launch.alpha
                 )
+            }
+
+            // 7. Draw Bubble Fog / Ink Clouds over obscured cells
+            for (fogPos in board.fogTiles) {
+                val topLeft = Offset(
+                    trayPadding + fogPos.x * tileSize + tileSize * 0.04f,
+                    trayPadding + fogPos.y * tileSize + tileSize * 0.04f
+                )
+                TrayRenderer.drawFogTile(this, topLeft, tileSize)
             }
         }
     }

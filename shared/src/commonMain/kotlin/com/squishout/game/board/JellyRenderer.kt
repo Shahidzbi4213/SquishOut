@@ -213,6 +213,68 @@ object JellyRenderer {
         }
     }
 
+    fun drawCandyTether(
+        drawScope: DrawScope,
+        p1: Offset,
+        p2: Offset,
+        tileSize: Float,
+        isAwake: Boolean = false
+    ) {
+        drawScope.apply {
+            val tetherWidth = tileSize * 0.16f
+            val shadowOffset = Offset(0f, tileSize * 0.04f)
+
+            // 1. Soft Shadow
+            drawLine(
+                color = Color.Black.copy(alpha = 0.12f),
+                start = p1 + shadowOffset,
+                end = p2 + shadowOffset,
+                strokeWidth = tetherWidth,
+                cap = StrokeCap.Round
+            )
+
+            // 2. Gummy Candy Ribbon
+            val ribbonColor = if (isAwake) Color(0xFFFBBF24) else Color(0xFFF472B6)
+            val ribbonBorder = if (isAwake) Color(0xFFD97706) else Color(0xFFBE123C)
+
+            drawLine(
+                color = ribbonBorder,
+                start = p1,
+                end = p2,
+                strokeWidth = tetherWidth + tileSize * 0.04f,
+                cap = StrokeCap.Round
+            )
+
+            drawLine(
+                color = ribbonColor,
+                start = p1,
+                end = p2,
+                strokeWidth = tetherWidth,
+                cap = StrokeCap.Round
+            )
+
+            // 3. Central Candy Heart Emblem
+            val mid = Offset((p1.x + p2.x) / 2f, (p1.y + p2.y) / 2f)
+            val heartRadius = tileSize * 0.14f
+
+            drawCircle(
+                color = Color.White,
+                radius = heartRadius + 2f,
+                center = mid
+            )
+            drawCircle(
+                color = if (isAwake) Color(0xFFF59E0B) else Color(0xFFE11D48),
+                radius = heartRadius,
+                center = mid
+            )
+            drawCircle(
+                color = Color.White.copy(alpha = 0.8f),
+                radius = heartRadius * 0.35f,
+                center = Offset(mid.x - heartRadius * 0.3f, mid.y - heartRadius * 0.3f)
+            )
+        }
+    }
+
     private fun getColorPalette(type: JellyType): Triple<Color, Color, Color> =
         when (type) {
             JellyType.STRAWBERRY -> Triple(SquishColors.Strawberry, SquishColors.StrawberryLight, SquishColors.StrawberryDark)

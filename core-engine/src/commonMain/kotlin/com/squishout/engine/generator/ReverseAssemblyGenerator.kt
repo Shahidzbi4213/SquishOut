@@ -7,6 +7,7 @@ import com.squishout.engine.model.JellyType
 import com.squishout.engine.model.Obstacle
 import com.squishout.engine.model.ObstacleType
 import com.squishout.engine.model.Position
+import com.squishout.engine.model.WaterJet
 import kotlin.random.Random
 
 data class LevelConfig(
@@ -14,6 +15,9 @@ data class LevelConfig(
     val jellyCount: Int = 14,
     val obstacleCount: Int = 1,
     val includeMultiCell: Boolean = false,
+    val includeWaterJets: Boolean = false,
+    val includeSchoolingPairs: Boolean = false,
+    val includeBubbleFog: Boolean = false,
     val seed: Long? = null
 )
 
@@ -29,7 +33,7 @@ class ReverseAssemblyGenerator {
     fun generate(config: LevelConfig): Level {
         val random = if (config.seed != null) Random(config.seed) else Random.Default
         var attempts = 0
-        val maxAttempts = 50
+        val maxAttempts = 60
 
         while (attempts < maxAttempts) {
             attempts++
@@ -47,14 +51,16 @@ class ReverseAssemblyGenerator {
         val width = 6
         val height = 6
         val obstacles = mutableListOf<Obstacle>()
+        val waterJets = mutableListOf<WaterJet>()
 
         // 1. Place obstacles in interior (1..4, 1..4) to avoid blocking entire perimeter
         val interiorPositions = (1 until width - 1).flatMap { x ->
             (1 until height - 1).map { y -> Position(x, y) }
-        }.shuffled(random)
+        }.shuffled(random).toMutableList()
 
         val obstacleCount = config.obstacleCount.coerceAtMost(interiorPositions.size)
         for (i in 0 until obstacleCount) {
+            val pos = interiorPositions.removeAt(0)
             val type = when {
                 config.stageNumber >= 20 && i % 3 == 0 -> ObstacleType.ICE_BLOCK
                 config.stageNumber >= 10 && i % 2 == 1 -> ObstacleType.HONEY_POT
@@ -62,14 +68,35 @@ class ReverseAssemblyGenerator {
                 else -> ObstacleType.ROCK_TREE
             }
             val health = if (type == ObstacleType.ICE_BLOCK) 2 else 1
-            obstacles.add(Obstacle("obs_$i", type, interiorPositions[i], health = health, maxHealth = health))
+            obstacles.add(Obstacle("obs_$i", type, pos, health = health, maxHealth = health))
         }
 
-        var board = Board(width = width, height = height, obstacles = obstacles)
+        // 2. Place Water Jets (90° Trajectory Deflectors) if enabled
+        if (config.includeWaterJets && interiorPositions.isNotEmpty()) {
+            val jetCount = if (config.stageNumber >= 10) 2 else 1
+            for (i in 0 until jetCount.coerceAtMost(interiorPositions.size)) {
+                val jetPos = interiorPositions.removeAt(0)
+                // Point toward an edge
+                val jetDir = when {
+                    jetPos.x >= 3 -> Direction.EAST
+                    jetPos.x <= 2 -> Direction.WEST
+                    jetPos.y >= 3 -> Direction.SOUTH
+                    else -> Direction.NORTH
+                }
+                waterJets.add(WaterJet(jetPos, jetDir))
+            }
+        }
+
+        var board = Board(
+            width = width,
+            height = height,
+            obstacles = obstacles,
+            waterJets = waterJets
+        )
         val placedJellies = mutableListOf<Jelly>()
         var jellyIndex = 0
 
-        // 2. Reverse-assembly placement loop
+        // 3. Reverse-assembly placement loop
         // We iterate and place jellies that have an open exit ray at the moment of placement
         var consecutiveFailures = 0
         while (placedJellies.size < config.jellyCount && consecutiveFailures < 100) {
@@ -95,7 +122,6 @@ class ReverseAssemblyGenerator {
                         listOf(pos)
                     }
 
-                    // Check if path from head along 'dir' to edge is currently free of obstructions
                     val tempJelly = Jelly(
                         id = "jelly_$jellyIndex",
                         type = pickJellyType(dir, isMultiCell),
@@ -124,12 +150,51 @@ class ReverseAssemblyGenerator {
             return null
         }
 
+        // 4. Optionally link two adjacent single-cell jellies into a Symbiotic Schooling Pair
+        if (config.includeSchoolingPairs && placedJellies.size >= 4) {
+            val singleCellJellies = placedJellies.filter { it.tiles.size == 1 && it.linkedJellyId == null }
+            pairLoop@ for (i in singleCellJellies.indices) {
+                val j1 = singleCellJellies[i]
+                for (j in (i + 1) until singleCellJellies.size) {
+                    val j2 = singleCellJellies[j]
+                    val p1 = j1.tiles.first()
+                    val p2 = j2.tiles.first()
+                    val dx = kotlin.math.abs(p1.x - p2.x)
+                    val dy = kotlin.math.abs(p1.y - p2.y)
+                    // Must be adjacent (cardinal distance = 1)
+                    if (dx + dy == 1) {
+                        // Link them
+                        val updatedJellies = placedJellies.map { jelly ->
+                            when (jelly.id) {
+                                j1.id -> jelly.copy(linkedJellyId = j2.id)
+                                j2.id -> jelly.copy(linkedJellyId = j1.id)
+                                else -> jelly
+                            }
+                        }
+                        board = board.copy(jellies = updatedJellies)
+                        break@pairLoop
+                    }
+                }
+            }
+        }
+
+        // 5. Optionally place Bubble Fog / Ink Clouds
+        var fogTiles = emptySet<Position>()
+        if (config.includeBubbleFog) {
+            val fogCandidates = (1 until width - 1).flatMap { x ->
+                (1 until height - 1).map { y -> Position(x, y) }
+            }.shuffled(random).take(3).toSet()
+            fogTiles = fogCandidates
+            board = board.copy(fogTiles = fogTiles)
+        }
+
         val finalizedBoard = board.withUpdatedEyeStates()
         if (finalizedBoard.awakeJellies.isEmpty()) {
             return null
         }
 
-        val optimalMoves = placedJellies.size
+        val optimalMoves = finalizedBoard.jellies.count { it.linkedJellyId == null } +
+                (finalizedBoard.jellies.count { it.linkedJellyId != null } / 2)
         val targetScore = optimalMoves * 100 + 300
 
         return Level(
@@ -163,8 +228,10 @@ class ReverseAssemblyGenerator {
             if (awake.isEmpty()) {
                 return false // Deadlock detected
             }
-            // In a greedy step, remove the first awake jelly
-            current = current.removeJelly(awake.first().id)
+            // In a greedy step, remove the first awake jelly and its partner if linked
+            val first = awake.first()
+            val toRemove = if (first.linkedJellyId != null) setOf(first.id, first.linkedJellyId) else setOf(first.id)
+            current = current.removeJellies(toRemove)
             steps++
         }
 

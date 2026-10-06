@@ -58,6 +58,9 @@ class GameViewModel(
             jellyCount = (10 + (stage - 1) * 2).coerceAtMost(22),
             obstacleCount = ((stage - 1) / 3).coerceAtMost(3),
             includeMultiCell = stage >= 3,
+            includeWaterJets = stage >= 4,
+            includeSchoolingPairs = stage >= 6,
+            includeBubbleFog = stage >= 8,
             seed = stage * 1000L + 42L
         )
         val level = generator.generate(config)
@@ -89,12 +92,15 @@ class GameViewModel(
                 if (result.shatteredObstacles.isNotEmpty()) {
                     playSound(SoundEffect.CRACK)
                     triggerHaptic(HapticFeedbackType.CRACK_THUMP)
+                } else if (result.partnerJelly != null) {
+                    playSound(SoundEffect.BOOSTER)
+                    triggerHaptic(HapticFeedbackType.VICTORY_FANFARE)
                 } else {
                     playSound(SoundEffect.POP)
                     triggerHaptic(HapticFeedbackType.LIGHT_CLICK)
                 }
 
-                // Animate launch
+                // Animate launch (handles single or symbiotic partner pair)
                 animateLaunch(result)
 
                 if (result.isSolved) {
@@ -126,29 +132,40 @@ class GameViewModel(
 
     private fun animateLaunch(result: TapResult.Launched) {
         viewModelScope.launch {
-            val anim = LaunchAnimation(
+            val anim1 = LaunchAnimation(
                 jelly = result.jelly,
+                exitPath = result.exitPath,
                 progress = 0f
             )
+            val partner = result.partnerJelly
+            val partnerExit = result.partnerExitPath
+            val partnerAnim = if (partner != null && partnerExit != null) {
+                LaunchAnimation(
+                    jelly = partner,
+                    exitPath = partnerExit,
+                    progress = 0f
+                )
+            } else null
 
-            _activeLaunches.value = _activeLaunches.value + anim
+            val launchingIds = setOfNotNull(result.jelly.id, result.partnerJelly?.id)
+            val newAnims = listOfNotNull(anim1, partnerAnim)
+            _activeLaunches.value = _activeLaunches.value + newAnims
 
-            val durationMs = 320L
+            val durationMs = 340L
             val startTime = com.squishout.game.util.currentTimeMillis()
             while (true) {
                 val elapsed = com.squishout.game.util.currentTimeMillis() - startTime
                 val rawProgress = (elapsed.toFloat() / durationMs).coerceIn(0f, 1f)
-                // FastOutLinearIn easing: t^2
                 val progress = rawProgress * rawProgress
                 _activeLaunches.value = _activeLaunches.value.map {
-                    if (it.jelly.id == result.jelly.id) it.copy(progress = progress) else it
+                    if (it.jelly.id in launchingIds) it.copy(progress = progress) else it
                 }
                 if (rawProgress >= 1f) break
                 delay(16)
             }
 
             // Remove finished launch animation
-            _activeLaunches.value = _activeLaunches.value.filterNot { it.jelly.id == result.jelly.id }
+            _activeLaunches.value = _activeLaunches.value.filterNot { it.jelly.id in launchingIds }
         }
     }
 

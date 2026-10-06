@@ -3,9 +3,11 @@ package com.squishout.game.board
 import androidx.compose.ui.geometry.Offset
 import com.squishout.engine.model.Direction
 import com.squishout.engine.model.Jelly
+import com.squishout.engine.model.Position
 
 data class LaunchAnimation(
     val jelly: Jelly,
+    val exitPath: List<Position> = emptyList(),
     val progress: Float = 0f
 ) {
     val easedProgress: Float

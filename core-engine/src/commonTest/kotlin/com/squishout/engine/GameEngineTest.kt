@@ -9,6 +9,7 @@ import com.squishout.engine.model.JellyType
 import com.squishout.engine.model.Position
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -124,19 +125,44 @@ class GameEngineTest {
     }
 
     @Test
-    fun testStage2Board() {
-        val gen = com.squishout.engine.generator.ReverseAssemblyGenerator()
-        val config = com.squishout.engine.generator.LevelConfig(
-            stageNumber = 2,
-            jellyCount = 12,
-            obstacleCount = 0,
-            includeMultiCell = false,
-            seed = 2042L
-        )
-        val level = gen.generate(config)
-        println("=== STAGE 2 BOARD ===")
-        for (j in level.initialBoard.jellies) {
-            println("Jelly: id=${j.id}, type=${j.type}, dir=${j.direction}, tiles=${j.tiles}, eye=${j.eyeState}")
-        }
+    fun testSymbioticSchoolingPairLaunchesBothPartnersSynchronously() {
+        val j1 = Jelly("j1", JellyType.STRAWBERRY, Direction.NORTH, listOf(Position(2, 2)), linkedJellyId = "j2")
+        val j2 = Jelly("j2", JellyType.BLUEBERRY, Direction.EAST, listOf(Position(3, 2)), linkedJellyId = "j1")
+        val board = Board(jellies = listOf(j1, j2)).withUpdatedEyeStates()
+        val level = Level(stageNumber = 6, initialBoard = board, optimalMoves = 1, targetScore = 500)
+
+        engine.loadLevel(level)
+        assertEquals(2, engine.state.value.board.jellies.size)
+
+        // Tap j1 -> both j1 and j2 launch synchronously!
+        val result = engine.onTileTapped(Position(2, 2))
+        assertIs<TapResult.Launched>(result)
+        assertEquals("j1", result.jelly.id)
+        assertNotNull(result.partnerJelly)
+        assertEquals("j2", result.partnerJelly.id)
+        assertNotNull(result.partnerExitPath)
+
+        // Board is now completely cleared!
+        assertEquals(0, engine.state.value.board.jellies.size)
+        assertTrue(engine.state.value.isCompleted)
+        assertTrue(result.isSolved)
+    }
+
+    @Test
+    fun testTraversedPathClearsBubbleFog() {
+        val j1 = Jelly("j1", JellyType.STRAWBERRY, Direction.NORTH, listOf(Position(2, 2)))
+        val fog = setOf(Position(2, 1), Position(5, 5))
+        val board = Board(jellies = listOf(j1), fogTiles = fog).withUpdatedEyeStates()
+        val level = Level(stageNumber = 8, initialBoard = board, optimalMoves = 1, targetScore = 500)
+
+        engine.loadLevel(level)
+        assertTrue(engine.state.value.board.isFoggy(Position(2, 1)))
+
+        val result = engine.onTileTapped(Position(2, 2))
+        assertIs<TapResult.Launched>(result)
+        assertTrue(result.clearedFog.contains(Position(2, 1)))
+        assertFalse(engine.state.value.board.isFoggy(Position(2, 1)))
+        assertTrue(engine.state.value.board.isFoggy(Position(5, 5)))
     }
 }
+

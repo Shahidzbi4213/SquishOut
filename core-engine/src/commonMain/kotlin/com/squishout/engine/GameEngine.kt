@@ -18,7 +18,10 @@ sealed interface TapResult {
         val pointsEarned: Int,
         val isSolved: Boolean,
         val stars: Int,
-        val shatteredObstacles: List<Obstacle> = emptyList()
+        val shatteredObstacles: List<Obstacle> = emptyList(),
+        val clearedFog: Set<Position> = emptySet(),
+        val partnerJelly: Jelly? = null,
+        val partnerExitPath: List<Position>? = null
     ) : TapResult
 
     data class Blocked(
@@ -75,6 +78,7 @@ class GameEngine {
     /**
      * Handles tapping on a grid coordinate.
      * Direct manipulation: If an unblocked jelly is tapped, it launches immediately.
+     * If part of a Symbiotic Schooling Pair, both partners launch synchronously!
      */
     fun onTileTapped(pos: Position): TapResult {
         val current = _state.value
@@ -87,14 +91,27 @@ class GameEngine {
         return if (jelly.eyeState == EyeState.AWAKE) {
             // 1. Unblocked -> Launch!
             val exitPath = current.board.getEscapePath(jelly)
-            val afterRemoval = current.board.removeJelly(jelly.id)
+            val partner = jelly.linkedJellyId?.let { current.board.getJellyById(it) }
+            val partnerExitPath = partner?.let { current.board.getEscapePath(it) }
 
-            // Damage any crackable obstacle adjacent to launching jelly or its on-board escape path
-            val traversed = (jelly.tiles + exitPath.filter { it.isWithinBounds(current.board.width, current.board.height) }).toSet()
-            val (updatedBoard, shattered) = afterRemoval.damageObstaclesAdjacentTo(traversed)
+            val jelliesToRemove = if (partner != null) setOf(jelly.id, partner.id) else setOf(jelly.id)
+            val afterRemoval = current.board.removeJellies(jelliesToRemove)
+
+            // Collect all traversed tiles from launched jelly (and partner if linked)
+            val traversedJellyTiles = jelly.tiles + exitPath.filter { it.isWithinBounds(current.board.width, current.board.height) }
+            val traversedPartnerTiles = if (partner != null && partnerExitPath != null) {
+                partner.tiles + partnerExitPath.filter { it.isWithinBounds(current.board.width, current.board.height) }
+            } else emptyList()
+            val allTraversed = (traversedJellyTiles + traversedPartnerTiles).toSet()
+
+            // Damage adjacent crackable obstacles
+            val (boardAfterDamage, shattered) = afterRemoval.damageObstaclesAdjacentTo(allTraversed)
+            // Clear adjacent bubble fog
+            val (updatedBoard, clearedFog) = boardAfterDamage.clearFogAdjacentTo(allTraversed)
 
             val isSolved = updatedBoard.isSolved
-            val points = 100 + (current.movesUsed * 5) + (shattered.size * 50)
+            val schoolingBonus = if (partner != null) 150 else 0
+            val points = 100 + (current.movesUsed * 5) + (shattered.size * 50) + (clearedFog.size * 25) + schoolingBonus
             val newMoves = current.movesUsed + 1
             val stars = if (isSolved) calculateStars(newMoves, current.optimalMoves) else 0
 
@@ -116,7 +133,10 @@ class GameEngine {
                 pointsEarned = points,
                 isSolved = isSolved,
                 stars = stars,
-                shatteredObstacles = shattered
+                shatteredObstacles = shattered,
+                clearedFog = clearedFog,
+                partnerJelly = partner,
+                partnerExitPath = partnerExitPath
             )
         } else {
             // 2. Blocked -> Wobble refusal and deduce heart
@@ -222,10 +242,22 @@ class GameEngine {
 
     private fun findFirstBlocker(jelly: Jelly, board: Board): Position? {
         val path = board.getEscapePath(jelly)
+        val partnerId = jelly.linkedJellyId
         for (pos in path) {
             val other = board.getJellyAt(pos)
-            if (other != null && other.id != jelly.id) return pos
+            if (other != null && other.id != jelly.id && other.id != partnerId) return pos
             if (board.getObstacleAt(pos) != null) return pos
+        }
+        if (partnerId != null) {
+            val partner = board.getJellyById(partnerId)
+            if (partner != null) {
+                val partnerPath = board.getEscapePath(partner)
+                for (pos in partnerPath) {
+                    val other = board.getJellyAt(pos)
+                    if (other != null && other.id != partner.id && other.id != jelly.id) return pos
+                    if (board.getObstacleAt(pos) != null) return pos
+                }
+            }
         }
         return null
     }

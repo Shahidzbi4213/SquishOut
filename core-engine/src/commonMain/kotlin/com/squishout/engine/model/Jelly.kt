@@ -23,11 +23,14 @@ data class Jelly(
     val type: JellyType,
     val direction: Direction,
     val tiles: List<Position>,
-    val eyeState: EyeState = EyeState.ASLEEP
+    val eyeState: EyeState = EyeState.ASLEEP,
+    val linkedJellyId: String? = null
 ) {
     init {
         require(tiles.isNotEmpty()) { "Jelly must occupy at least one tile" }
     }
+
+    val isLinked: Boolean get() = linkedJellyId != null
 
     val headPosition: Position
         get() = when (direction) {
@@ -40,6 +43,8 @@ data class Jelly(
     fun occupies(pos: Position): Boolean = pos in tiles
 
     fun withEyeState(newState: EyeState): Jelly = copy(eyeState = newState)
+
+    fun withLinkedJellyId(newLinkedId: String?): Jelly = copy(linkedJellyId = newLinkedId)
 }
 
 enum class ObstacleType(val symbol: String, val hexColor: String) {

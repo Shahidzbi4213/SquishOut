@@ -4,7 +4,9 @@ data class Board(
     val width: Int = 6,
     val height: Int = 6,
     val jellies: List<Jelly> = emptyList(),
-    val obstacles: List<Obstacle> = emptyList()
+    val obstacles: List<Obstacle> = emptyList(),
+    val waterJets: List<WaterJet> = emptyList(),
+    val fogTiles: Set<Position> = emptySet()
 ) {
     // Quick lookup maps
     private val tileToJelly: Map<Position, Jelly> by lazy {
@@ -21,6 +23,10 @@ data class Board(
         obstacles.associateBy { it.position }
     }
 
+    private val tileToWaterJet: Map<Position, WaterJet> by lazy {
+        waterJets.associateBy { it.position }
+    }
+
     fun isTileOccupied(pos: Position): Boolean =
         tileToJelly.containsKey(pos) || tileToObstacle.containsKey(pos)
 
@@ -28,17 +34,29 @@ data class Board(
 
     fun getObstacleAt(pos: Position): Obstacle? = tileToObstacle[pos]
 
+    fun getWaterJetAt(pos: Position): WaterJet? = tileToWaterJet[pos]
+
+    fun isFoggy(pos: Position): Boolean = pos in fogTiles
+
     fun getJellyById(id: String): Jelly? = jellies.find { it.id == id }
 
     /**
-     * Checks if a jelly has a clear, unblocked ray to the board edge along its direction.
+     * Checks if a single jelly has an unblocked path to the board edge along its direction,
+     * accounting for any 90-degree trajectory deflections from [WaterJet]s.
+     * Optional [ignoredJellyIds] lets linked partners ignore each other during coordinated schooling exit.
      */
-    fun canJellyEscape(jelly: Jelly): Boolean {
+    fun canSingleJellyEscape(jelly: Jelly, ignoredJellyIds: Set<String> = emptySet()): Boolean {
         val path = getEscapePath(jelly)
+        val lastPos = path.lastOrNull() ?: return false
+        // If the path didn't reach outside board bounds, it got trapped in a loop or dead end
+        if (lastPos.isWithinBounds(width, height)) {
+            return false
+        }
+
         // If the path encounters any tile occupied by another object, it is blocked
         for (pos in path) {
             val otherJelly = getJellyAt(pos)
-            if (otherJelly != null && otherJelly.id != jelly.id) {
+            if (otherJelly != null && otherJelly.id != jelly.id && otherJelly.id !in ignoredJellyIds) {
                 return false
             }
             if (getObstacleAt(pos) != null) {
@@ -49,14 +67,44 @@ data class Board(
     }
 
     /**
+     * Checks if a jelly can escape. If linked to a partner in a Symbiotic Schooling Pair,
+     * BOTH partners must be simultaneously unblocked to launch together.
+     */
+    fun canJellyEscape(jelly: Jelly): Boolean {
+        val partnerId = jelly.linkedJellyId
+        if (partnerId != null) {
+            val partner = getJellyById(partnerId)
+            if (partner == null) return false
+            return canSingleJellyEscape(jelly, setOf(partnerId)) &&
+                   canSingleJellyEscape(partner, setOf(jelly.id))
+        }
+        return canSingleJellyEscape(jelly)
+    }
+
+    /**
      * Returns the sequence of grid positions a jelly traverses from its head to beyond the board edge.
+     * If the path encounters a [WaterJet] conveyor tile, its trajectory curves into the jet's direction.
      */
     fun getEscapePath(jelly: Jelly): List<Position> {
         val path = mutableListOf<Position>()
-        var current = jelly.headPosition.step(jelly.direction)
+        val visited = mutableSetOf<Pair<Position, Direction>>()
+        var currentDir = jelly.direction
+        var current = jelly.headPosition.step(currentDir)
+
         while (current.isWithinBounds(width, height)) {
+            val state = current to currentDir
+            if (state in visited) {
+                // Loop detected (e.g. whirlpool loop of deflecting jets)
+                return path
+            }
+            visited.add(state)
             path.add(current)
-            current = current.step(jelly.direction)
+
+            val jet = getWaterJetAt(current)
+            if (jet != null) {
+                currentDir = jet.direction
+            }
+            current = current.step(currentDir)
         }
         // Add the off-screen exit position
         path.add(current)
@@ -76,11 +124,34 @@ data class Board(
     }
 
     /**
-     * Removes a jelly from the board and recalculates eye states for remaining jellies.
+     * Removes a single jelly from the board and recalculates eye states for remaining jellies.
      */
-    fun removeJelly(jellyId: String): Board {
-        val remaining = jellies.filterNot { it.id == jellyId }
+    fun removeJelly(jellyId: String): Board = removeJellies(setOf(jellyId))
+
+    /**
+     * Removes one or more jellies (such as a launched Symbiotic Schooling Pair) and updates eye states.
+     */
+    fun removeJellies(jellyIds: Set<String>): Board {
+        val remaining = jellies.filterNot { it.id in jellyIds }
         return copy(jellies = remaining).withUpdatedEyeStates()
+    }
+
+    /**
+     * Clears bubble fog from tiles adjacent to (or equal to) the specified launched positions.
+     * Returns the updated board and the set of cleared positions.
+     */
+    fun clearFogAdjacentTo(positions: Set<Position>): Pair<Board, Set<Position>> {
+        if (fogTiles.isEmpty()) return this to emptySet()
+        val cleared = mutableSetOf<Position>()
+        val remaining = fogTiles.filterNot { fogPos ->
+            val isCleared = positions.any { pos ->
+                pos == fogPos || isAdjacent(pos, setOf(fogPos))
+            }
+            if (isCleared) cleared.add(fogPos)
+            isCleared
+        }.toSet()
+        val newBoard = copy(fogTiles = remaining)
+        return newBoard to cleared
     }
 
     /**
