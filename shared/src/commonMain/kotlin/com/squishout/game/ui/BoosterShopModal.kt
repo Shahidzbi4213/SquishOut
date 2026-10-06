@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -91,12 +92,13 @@ fun BoosterShopModal(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                // Ambient Dark Backdrop Scrim
-                .background(Color(0xFF0F172A).copy(alpha = 0.68f))
+                // Ambient Dark Backdrop Scrim (spans 100% full bleed edge-to-edge)
+                .background(Color(0xFF0F172A).copy(alpha = 0.70f))
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
-                ) { onDismiss() },
+                ) { onDismiss() }
+                .safeDrawingPadding(),
             contentAlignment = Alignment.Center
         ) {
             // Ambient Warm Radial Halo
