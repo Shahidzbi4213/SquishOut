@@ -12,6 +12,7 @@ import com.squishout.engine.model.Position
 import com.squishout.game.audio.AudioPlayer
 import com.squishout.game.audio.HapticFeedbackType
 import com.squishout.game.audio.SoundEffect
+import com.squishout.game.board.FlyingRewardToken
 import com.squishout.game.board.LaunchAnimation
 import com.squishout.game.data.entity.UserSessionEntity
 import com.squishout.game.data.repository.GameRepository
@@ -45,6 +46,15 @@ class GameViewModel(
     private val _wobbleOffsets = MutableStateFlow<Map<String, Float>>(emptyMap())
     val wobbleOffsets: StateFlow<Map<String, Float>> = _wobbleOffsets.asStateFlow()
 
+    private val _blockerRecoils = MutableStateFlow<Map<Position, Float>>(emptyMap())
+    val blockerRecoils: StateFlow<Map<Position, Float>> = _blockerRecoils.asStateFlow()
+
+    private val _flyingRewards = MutableStateFlow<List<FlyingRewardToken>>(emptyList())
+    val flyingRewards: StateFlow<List<FlyingRewardToken>> = _flyingRewards.asStateFlow()
+
+    private val _shatteredObstacles = MutableStateFlow<List<com.squishout.engine.model.Obstacle>>(emptyList())
+    val shatteredObstacles: StateFlow<List<com.squishout.engine.model.Obstacle>> = _shatteredObstacles.asStateFlow()
+
     private var currentStage = 1
 
     init {
@@ -67,6 +77,9 @@ class GameViewModel(
         engine.loadLevel(level)
         _activeLaunches.value = emptyList()
         _wobbleOffsets.value = emptyMap()
+        _blockerRecoils.value = emptyMap()
+        _flyingRewards.value = emptyList()
+        _shatteredObstacles.value = emptyList()
     }
 
     private fun playSound(sound: SoundEffect) {
@@ -105,7 +118,31 @@ class GameViewModel(
 
                 if (result.isSolved) {
                     viewModelScope.launch {
-                        delay(200) // Brief dramatic pause for launch animation
+                        delay(250) // Let final jelly slow-motion climax start
+                        // Spawn flying reward stars toward top HUD
+                        val tokens = (0 until 5).map { i ->
+                            FlyingRewardToken(
+                                id = i,
+                                startX = 240f,
+                                startY = 240f,
+                                targetX = 240f + (i - 2) * 20f,
+                                targetY = -40f,
+                                progress = 0f,
+                                arcSpread = (i - 2) * 55f
+                            )
+                        }
+                        _flyingRewards.value = tokens
+                        val flyDurationMs = 520L
+                        val flyStartTime = com.squishout.game.util.currentTimeMillis()
+                        while (true) {
+                            val elapsed = com.squishout.game.util.currentTimeMillis() - flyStartTime
+                            val p = (elapsed.toFloat() / flyDurationMs).coerceIn(0f, 1f)
+                            _flyingRewards.value = tokens.map { it.copy(progress = p) }
+                            if (p >= 1f) break
+                            delay(16)
+                        }
+                        _flyingRewards.value = emptyList()
+
                         playSound(SoundEffect.VICTORY)
                         triggerHaptic(HapticFeedbackType.VICTORY_FANFARE)
                         val finalState = engine.state.value
@@ -122,7 +159,7 @@ class GameViewModel(
             is TapResult.Blocked -> {
                 playSound(SoundEffect.WOBBLE)
                 triggerHaptic(HapticFeedbackType.ERROR_WOBBLE)
-                animateWobble(result.jelly.id)
+                animateWobble(result.jelly.id, result.blockerPosition)
             }
             TapResult.EmptyTile, TapResult.GameOver -> {
                 // No action
@@ -132,10 +169,12 @@ class GameViewModel(
 
     private fun animateLaunch(result: TapResult.Launched) {
         viewModelScope.launch {
+            val isClimax = result.isSolved
             val anim1 = LaunchAnimation(
                 jelly = result.jelly,
                 exitPath = result.exitPath,
-                progress = 0f
+                progress = 0f,
+                isFeverClimax = isClimax
             )
             val partner = result.partnerJelly
             val partnerExit = result.partnerExitPath
@@ -143,15 +182,21 @@ class GameViewModel(
                 LaunchAnimation(
                     jelly = partner,
                     exitPath = partnerExit,
-                    progress = 0f
+                    progress = 0f,
+                    isFeverClimax = isClimax
                 )
             } else null
+
+            if (result.shatteredObstacles.isNotEmpty()) {
+                _shatteredObstacles.value = result.shatteredObstacles
+            }
 
             val launchingIds = setOfNotNull(result.jelly.id, result.partnerJelly?.id)
             val newAnims = listOfNotNull(anim1, partnerAnim)
             _activeLaunches.value = _activeLaunches.value + newAnims
 
-            val durationMs = 340L
+            // Final squishy gets dramatic slow-motion time dilation
+            val durationMs = if (isClimax) 560L else 340L
             val startTime = com.squishout.game.util.currentTimeMillis()
             while (true) {
                 val elapsed = com.squishout.game.util.currentTimeMillis() - startTime
@@ -169,9 +214,9 @@ class GameViewModel(
         }
     }
 
-    private fun animateWobble(jellyId: String) {
+    private fun animateWobble(jellyId: String, blockerPosition: Position? = null) {
         viewModelScope.launch {
-            val durationMs = 200L
+            val durationMs = 220L
             val startTime = com.squishout.game.util.currentTimeMillis()
             while (true) {
                 val elapsed = com.squishout.game.util.currentTimeMillis() - startTime
@@ -179,10 +224,20 @@ class GameViewModel(
                 // 3 full sine waves with decay
                 val offset = sin(progress * 6f * kotlin.math.PI.toFloat()) * (1f - progress)
                 _wobbleOffsets.value = _wobbleOffsets.value + (jellyId to offset)
+
+                if (blockerPosition != null) {
+                    // Blocker impact recoil shudder
+                    val recoil = sin(progress * 8f * kotlin.math.PI.toFloat()) * (1f - progress) * 0.75f
+                    _blockerRecoils.value = _blockerRecoils.value + (blockerPosition to recoil)
+                }
+
                 if (progress >= 1f) break
                 delay(16)
             }
             _wobbleOffsets.value = _wobbleOffsets.value - jellyId
+            if (blockerPosition != null) {
+                _blockerRecoils.value = _blockerRecoils.value - blockerPosition
+            }
         }
     }
 

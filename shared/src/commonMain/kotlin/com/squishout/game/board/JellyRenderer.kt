@@ -2,8 +2,6 @@ package com.squishout.game.board
 
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -17,6 +15,9 @@ import com.squishout.engine.model.EyeState
 import com.squishout.engine.model.Jelly
 import com.squishout.engine.model.JellyType
 import com.squishout.game.theme.SquishColors
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.sin
 
 object JellyRenderer {
 
@@ -30,7 +31,10 @@ object JellyRenderer {
         offsetX: Float = 0f,
         offsetY: Float = 0f,
         alpha: Float = 1f,
-        isHighlighted: Boolean = false
+        isHighlighted: Boolean = false,
+        animTimeSeconds: Float = 0f,
+        isPressed: Boolean = false,
+        wobbleOffset: Float = 0f
     ) {
         val (baseColor, lightColor, darkColor) = getColorPalette(jelly.type)
         val padding = tileSize * 0.08f
@@ -44,12 +48,40 @@ object JellyRenderer {
         val width = (maxX - minX + 1) * tileSize - padding * 2
         val height = (maxY - minY + 1) * tileSize - padding * 2
 
+        // 1. Idle breathing pulse (harmonic volume preservation)
+        val phase = (jelly.id.hashCode() and 0xFFFF) * 0.001f
+        val breatheWave = sin(animTimeSeconds * 2.4f + phase)
+        val breatheScaleX = if (isPressed || abs(wobbleOffset) > 0.05f) 1f else 1f + breatheWave * 0.022f
+        val breatheScaleY = if (isPressed || abs(wobbleOffset) > 0.05f) 1f else 1f - breatheWave * 0.022f
+
+        // 2. Touch anticipation squash under finger
+        val pressScaleX = if (isPressed) 1.14f else 1f
+        val pressScaleY = if (isPressed) 0.86f else 1f
+        val pressOffsetY = if (isPressed) tileSize * 0.04f else 0f
+
+        // 3. Accordion pancake deformation against obstacles
+        val absWobble = abs(wobbleOffset)
+        val isWobbling = absWobble > 0.02f
+        val (pancakeScaleX, pancakeScaleY) = if (isWobbling) {
+            val isHorizontal = jelly.direction == Direction.EAST || jelly.direction == Direction.WEST
+            if (isHorizontal) {
+                Pair(1f - absWobble * 0.28f, 1f + absWobble * 0.20f)
+            } else {
+                Pair(1f + absWobble * 0.20f, 1f - absWobble * 0.28f)
+            }
+        } else {
+            Pair(1f, 1f)
+        }
+
+        val totalScaleX = scaleX * breatheScaleX * pressScaleX * pancakeScaleX
+        val totalScaleY = scaleY * breatheScaleY * pressScaleY * pancakeScaleY
+
         val cx = topLeft.x + width / 2f + offsetX
-        val cy = topLeft.y + height / 2f + offsetY
+        val cy = topLeft.y + height / 2f + offsetY + pressOffsetY
 
         drawScope.apply {
-            val adjustedWidth = width * scaleX
-            val adjustedHeight = height * scaleY
+            val adjustedWidth = width * totalScaleX
+            val adjustedHeight = height * totalScaleY
             val rectLeft = cx - adjustedWidth / 2f
             val rectTop = cy - adjustedHeight / 2f
             val cornerRadius = CornerRadius(tileSize * 0.38f, tileSize * 0.38f)
@@ -105,8 +137,19 @@ object JellyRenderer {
                 center = Offset(rectLeft + adjustedWidth * 0.6f, rectTop + adjustedHeight * 0.18f)
             )
 
-            // 6. Expressive Eyes and Mouth
-            drawFace(this, jelly.eyeState, jelly.direction, cx, cy, tileSize, alpha)
+            // 6. Expressive Eyes and Mouth (with blinking and shock)
+            drawFace(
+                drawScope = this,
+                eyeState = jelly.eyeState,
+                direction = jelly.direction,
+                cx = cx,
+                cy = cy,
+                tileSize = tileSize,
+                alpha = alpha,
+                animTimeSeconds = animTimeSeconds,
+                phase = phase,
+                isWobbling = isWobbling
+            )
         }
     }
 
@@ -161,11 +204,14 @@ object JellyRenderer {
         cx: Float,
         cy: Float,
         tileSize: Float,
-        alpha: Float
+        alpha: Float,
+        animTimeSeconds: Float,
+        phase: Float,
+        isWobbling: Boolean
     ) {
-        // Shift eye center slightly toward the direction of travel
-        val eyeShiftX = direction.dx * tileSize * 0.07f
-        val eyeShiftY = direction.dy * tileSize * 0.07f
+        // Shift eye center slightly toward travel direction
+        val eyeShiftX = direction.dx * tileSize * 0.08f
+        val eyeShiftY = direction.dy * tileSize * 0.08f
         val faceCenterX = cx + eyeShiftX
         val faceCenterY = cy + eyeShiftY
 
@@ -174,15 +220,78 @@ object JellyRenderer {
         val eyeRadius = tileSize * 0.075f
         val darkCharcoal = Color(0xFF261C2C).copy(alpha = alpha)
 
-        if (eyeState == EyeState.AWAKE) {
-            // Sparkling wide awake eyes ( ✦‿✦ )
-            // Left eye
-            drawScope.drawCircle(color = darkCharcoal, radius = eyeRadius, center = Offset(faceCenterX - eyeSpacing, eyeY))
-            drawScope.drawCircle(color = Color.White.copy(alpha = alpha), radius = eyeRadius * 0.45f, center = Offset(faceCenterX - eyeSpacing - eyeRadius * 0.25f, eyeY - eyeRadius * 0.25f))
+        // Periodic eye blinking calculation (~3.6s cycle)
+        val blinkInterval = 3.6f + (phase * 10f) % 1.2f
+        val timeInBlinkCycle = (animTimeSeconds + phase) % blinkInterval
+        val isBlinking = timeInBlinkCycle < 0.14f && !isWobbling
+        val blinkScaleY = if (isBlinking) {
+            val p = timeInBlinkCycle / 0.14f
+            1f - sin(p * PI.toFloat()) * 0.85f
+        } else 1f
 
-            // Right eye
-            drawScope.drawCircle(color = darkCharcoal, radius = eyeRadius, center = Offset(faceCenterX + eyeSpacing, eyeY))
-            drawScope.drawCircle(color = Color.White.copy(alpha = alpha), radius = eyeRadius * 0.45f, center = Offset(faceCenterX + eyeSpacing - eyeRadius * 0.25f, eyeY - eyeRadius * 0.25f))
+        if (isWobbling) {
+            // Shocked collision expression ( O _ O )
+            val shockedRadius = eyeRadius * 1.32f
+            // Left eye wide
+            drawScope.drawCircle(color = darkCharcoal, radius = shockedRadius, center = Offset(faceCenterX - eyeSpacing, eyeY))
+            drawScope.drawCircle(color = Color.White.copy(alpha = alpha), radius = shockedRadius * 0.3f, center = Offset(faceCenterX - eyeSpacing, eyeY))
+
+            // Right eye wide
+            drawScope.drawCircle(color = darkCharcoal, radius = shockedRadius, center = Offset(faceCenterX + eyeSpacing, eyeY))
+            drawScope.drawCircle(color = Color.White.copy(alpha = alpha), radius = shockedRadius * 0.3f, center = Offset(faceCenterX + eyeSpacing, eyeY))
+
+            // Open "O" mouth of shock
+            drawScope.drawCircle(
+                color = darkCharcoal,
+                radius = tileSize * 0.055f,
+                center = Offset(faceCenterX, faceCenterY + tileSize * 0.14f),
+                style = Stroke(width = tileSize * 0.035f)
+            )
+        } else if (eyeState == EyeState.AWAKE) {
+            // Sparkling wide awake eyes with pupil glancing towards exit direction ( ✦‿✦ )
+            val pupilGlanceX = direction.dx * eyeRadius * 0.32f
+            val pupilGlanceY = direction.dy * eyeRadius * 0.32f
+
+            if (blinkScaleY < 0.35f) {
+                // Closed blink arc
+                val leftBlinkArc = Path().apply {
+                    moveTo(faceCenterX - eyeSpacing - eyeRadius, eyeY)
+                    quadraticTo(faceCenterX - eyeSpacing, eyeY + eyeRadius * 0.4f, faceCenterX - eyeSpacing + eyeRadius, eyeY)
+                }
+                val rightBlinkArc = Path().apply {
+                    moveTo(faceCenterX + eyeSpacing - eyeRadius, eyeY)
+                    quadraticTo(faceCenterX + eyeSpacing, eyeY + eyeRadius * 0.4f, faceCenterX + eyeSpacing + eyeRadius, eyeY)
+                }
+                drawScope.drawPath(leftBlinkArc, color = darkCharcoal, style = Stroke(width = tileSize * 0.04f, cap = StrokeCap.Round))
+                drawScope.drawPath(rightBlinkArc, color = darkCharcoal, style = Stroke(width = tileSize * 0.04f, cap = StrokeCap.Round))
+            } else {
+                // Open eyes with glancing pupils and highlights
+                val currentRadiusY = eyeRadius * blinkScaleY
+
+                // Left eye
+                drawScope.drawOval(
+                    color = darkCharcoal,
+                    topLeft = Offset(faceCenterX - eyeSpacing - eyeRadius, eyeY - currentRadiusY),
+                    size = Size(eyeRadius * 2f, currentRadiusY * 2f)
+                )
+                drawScope.drawCircle(
+                    color = Color.White.copy(alpha = alpha),
+                    radius = eyeRadius * 0.42f * blinkScaleY,
+                    center = Offset(faceCenterX - eyeSpacing + pupilGlanceX - eyeRadius * 0.22f, eyeY + pupilGlanceY - currentRadiusY * 0.22f)
+                )
+
+                // Right eye
+                drawScope.drawOval(
+                    color = darkCharcoal,
+                    topLeft = Offset(faceCenterX + eyeSpacing - eyeRadius, eyeY - currentRadiusY),
+                    size = Size(eyeRadius * 2f, currentRadiusY * 2f)
+                )
+                drawScope.drawCircle(
+                    color = Color.White.copy(alpha = alpha),
+                    radius = eyeRadius * 0.42f * blinkScaleY,
+                    center = Offset(faceCenterX + eyeSpacing + pupilGlanceX - eyeRadius * 0.22f, eyeY + pupilGlanceY - currentRadiusY * 0.22f)
+                )
+            }
 
             // Happy smile curve
             val mouthPath = Path().apply {
@@ -274,6 +383,8 @@ object JellyRenderer {
             )
         }
     }
+
+    fun getPalette(type: JellyType): Triple<Color, Color, Color> = getColorPalette(type)
 
     private fun getColorPalette(type: JellyType): Triple<Color, Color, Color> =
         when (type) {

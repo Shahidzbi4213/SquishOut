@@ -19,7 +19,10 @@ object TrayRenderer {
         boardHeight: Int,
         tileSize: Float,
         trayPadding: Float = tileSize * 0.15f,
-        biome: com.squishout.game.theme.BiomeTheme = com.squishout.game.theme.BiomeTheme.SWEET_MEADOW
+        biome: com.squishout.game.theme.BiomeTheme = com.squishout.game.theme.BiomeTheme.SWEET_MEADOW,
+        shockwaveCenter: Offset? = null,
+        shockwaveRadius: Float = 0f,
+        shockwaveAlpha: Float = 0f
     ) {
         val totalWidth = boardWidth * tileSize + trayPadding * 2
         val totalHeight = boardHeight * tileSize + trayPadding * 2
@@ -80,6 +83,22 @@ object TrayRenderer {
                     )
                 }
             }
+
+            // 5. Climax Radial Shockwave Ripple (Expanding Ring)
+            if (shockwaveRadius > 0f && shockwaveAlpha > 0.01f && shockwaveCenter != null) {
+                drawCircle(
+                    color = Color(0xFFFFD700).copy(alpha = shockwaveAlpha * 0.4f),
+                    radius = shockwaveRadius,
+                    center = shockwaveCenter,
+                    style = Stroke(width = tileSize * 0.16f)
+                )
+                drawCircle(
+                    color = Color.White.copy(alpha = shockwaveAlpha * 0.65f),
+                    radius = (shockwaveRadius - tileSize * 0.05f).coerceAtLeast(0f),
+                    center = shockwaveCenter,
+                    style = Stroke(width = tileSize * 0.045f)
+                )
+            }
         }
     }
 
@@ -87,28 +106,31 @@ object TrayRenderer {
         drawScope: DrawScope,
         obstacle: Obstacle,
         topLeft: Offset,
-        tileSize: Float
+        tileSize: Float,
+        offsetX: Float = 0f,
+        offsetY: Float = 0f
     ) {
         val padding = tileSize * 0.08f
         val size = tileSize - padding * 2
         val cornerRadius = CornerRadius(tileSize * 0.28f, tileSize * 0.28f)
+        val pos = Offset(topLeft.x + offsetX, topLeft.y + offsetY)
 
         drawScope.apply {
-            val cx = topLeft.x + size / 2f
-            val cy = topLeft.y + size / 2f
+            val cx = pos.x + size / 2f
+            val cy = pos.y + size / 2f
 
             when (obstacle.type) {
                 ObstacleType.ROCK_MOUNTAIN -> {
                     // Rock mountain base
                     drawRoundRect(
                         color = SquishColors.SlateObstacleDark,
-                        topLeft = Offset(topLeft.x, topLeft.y + tileSize * 0.06f),
+                        topLeft = Offset(pos.x, pos.y + tileSize * 0.06f),
                         size = Size(size, size),
                         cornerRadius = cornerRadius
                     )
                     drawRoundRect(
                         color = SquishColors.SlateObstacle,
-                        topLeft = topLeft,
+                        topLeft = pos,
                         size = Size(size, size),
                         cornerRadius = cornerRadius
                     )
@@ -126,13 +148,13 @@ object TrayRenderer {
                     // Rock tree base
                     drawRoundRect(
                         color = SquishColors.SlateObstacleDark,
-                        topLeft = Offset(topLeft.x, topLeft.y + tileSize * 0.06f),
+                        topLeft = Offset(pos.x, pos.y + tileSize * 0.06f),
                         size = Size(size, size),
                         cornerRadius = cornerRadius
                     )
                     drawRoundRect(
                         color = SquishColors.SlateObstacle,
-                        topLeft = topLeft,
+                        topLeft = pos,
                         size = Size(size, size),
                         cornerRadius = cornerRadius
                     )
@@ -151,20 +173,20 @@ object TrayRenderer {
                     val iceBase = Color(0xFF93C5FD)
                     drawRoundRect(
                         color = iceDark,
-                        topLeft = Offset(topLeft.x, topLeft.y + tileSize * 0.06f),
+                        topLeft = Offset(pos.x, pos.y + tileSize * 0.06f),
                         size = Size(size, size),
                         cornerRadius = cornerRadius
                     )
                     drawRoundRect(
                         color = iceBase,
-                        topLeft = topLeft,
+                        topLeft = pos,
                         size = Size(size, size),
                         cornerRadius = cornerRadius
                     )
                     // Ice glint highlight
                     drawRoundRect(
                         color = Color.White.copy(alpha = 0.6f),
-                        topLeft = Offset(topLeft.x + size * 0.12f, topLeft.y + size * 0.12f),
+                        topLeft = Offset(pos.x + size * 0.12f, pos.y + size * 0.12f),
                         size = Size(size * 0.76f, size * 0.25f),
                         cornerRadius = CornerRadius(size * 0.12f, size * 0.12f)
                     )
@@ -194,13 +216,13 @@ object TrayRenderer {
                     val honeyBase = Color(0xFFF59E0B)
                     drawRoundRect(
                         color = honeyDark,
-                        topLeft = Offset(topLeft.x, topLeft.y + tileSize * 0.06f),
+                        topLeft = Offset(pos.x, pos.y + tileSize * 0.06f),
                         size = Size(size, size),
                         cornerRadius = cornerRadius
                     )
                     drawRoundRect(
                         color = honeyBase,
-                        topLeft = topLeft,
+                        topLeft = pos,
                         size = Size(size, size),
                         cornerRadius = cornerRadius
                     )
@@ -208,7 +230,7 @@ object TrayRenderer {
                     // Honey jar rim & dripping honey
                     drawRoundRect(
                         color = Color(0xFFFEF3C7),
-                        topLeft = Offset(topLeft.x + size * 0.15f, topLeft.y + size * 0.1f),
+                        topLeft = Offset(pos.x + size * 0.15f, pos.y + size * 0.1f),
                         size = Size(size * 0.7f, size * 0.2f),
                         cornerRadius = CornerRadius(size * 0.1f, size * 0.1f)
                     )

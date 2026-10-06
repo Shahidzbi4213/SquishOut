@@ -84,6 +84,9 @@ fun GameScreen(
                         stage = gameState.stageNumber,
                         activeLaunchesFlow = viewModel.activeLaunches,
                         wobbleOffsetsFlow = viewModel.wobbleOffsets,
+                        blockerRecoilsFlow = viewModel.blockerRecoils,
+                        flyingRewardsFlow = viewModel.flyingRewards,
+                        shatteredObstaclesFlow = viewModel.shatteredObstacles,
                         onTileTapped = viewModel::onTileTapped
                     )
                 }
