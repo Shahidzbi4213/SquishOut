@@ -63,6 +63,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.squishout.game.data.entity.LevelRecordEntity
 import com.squishout.game.data.entity.UserSessionEntity
+import com.squishout.game.ui.components.Canvas3DStar
+import com.squishout.game.ui.components.CanvasCandyCitadel
+import com.squishout.game.ui.components.CanvasGiftChest
+import com.squishout.game.ui.components.CanvasGoldenPadlock
+import com.squishout.game.ui.components.CanvasRoadsideProp
+import com.squishout.game.ui.components.CanvasRubyHeart
+import com.squishout.game.ui.components.CanvasStrawberryMascot
 import com.squishout.game.ui.components.SagaBottomNav
 import kotlin.math.sin
 
@@ -101,9 +108,9 @@ fun SagaMapScreen(
         val isCurrent = stageNum == currentUnlocked
         val stars = record?.stars ?: 0
         val biome = when (stageNum) {
-            1 -> "🌸 Sweet Meadow • Lvl 1–20"
-            21 -> "🌊 Soda Lagoon • Lvl 21–40"
-            41 -> "🍯 Honeycomb Valley • Lvl 41+"
+            1 -> "SWEET MEADOW • LVL 1–20"
+            21 -> "SODA LAGOON • LVL 21–40"
+            41 -> "HONEYCOMB VALLEY • LVL 41+"
             else -> null
         }
         SagaStage(stageNum, isUnlocked, isCurrent, stars, biome)
@@ -352,11 +359,20 @@ private fun PlayerProfileBadge(stage: Int) {
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(CircleShape)
-                    .background(Color.White)
-                    .border(1.dp, Color(0xFFFFE680), CircleShape),
+                    .background(
+                        Brush.radialGradient(
+                            listOf(Color(0xFFFFFDF5), Color(0xFFFFEEF2))
+                        )
+                    )
+                    .border(1.dp, Color(0xFFFFE680), CircleShape)
+                    .padding(3.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "🍓", fontSize = 24.sp)
+                CanvasStrawberryMascot(
+                    modifier = Modifier.fillMaxSize(),
+                    withCrown = false,
+                    animated = false
+                )
             }
         }
 
@@ -481,7 +497,7 @@ private fun HeartsPill(lives: Int, maxLives: Int, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(text = "❤️", fontSize = 13.sp)
+            CanvasRubyHeart(modifier = Modifier.size(16.dp, 15.dp))
             Text(
                 text = "$lives/$maxLives",
                 fontSize = 12.sp,
@@ -543,7 +559,10 @@ private fun DailyGiftButton(canClaim: Boolean, onClick: () -> Unit) {
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Text(text = "🎁", fontSize = 20.sp)
+        CanvasGiftChest(
+            canClaim = canClaim,
+            modifier = Modifier.size(24.dp)
+        )
 
         if (canClaim) {
             // Notification ping pip
@@ -718,16 +737,13 @@ private fun RoadsideCandyDecorations(stageNumber: Int) {
     Box(
         modifier = Modifier
             .offset(x = decorationX)
-            .size(36.dp),
+            .size(34.dp),
         contentAlignment = Alignment.Center
     ) {
-        when (stageNumber % 5) {
-            0 -> Text(text = "🍭", fontSize = 22.sp)
-            1 -> Text(text = "🌸", fontSize = 20.sp)
-            2 -> Text(text = "🍬", fontSize = 20.sp)
-            3 -> Text(text = "🍄", fontSize = 20.sp)
-            4 -> Text(text = "✨", fontSize = 18.sp)
-        }
+        CanvasRoadsideProp(
+            propType = stageNumber % 5,
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }
 
@@ -824,34 +840,29 @@ private fun CompletedStageNode(
             }
         }
 
-        // Cream Ribbon with Three 3D Embossed Gold Stars
+        // 3D Glazed Porcelain Ribbon with Three 3D Faceted Golden Stars
         Box(
             modifier = Modifier
                 .offset(y = (-6).dp)
-                .shadow(2.dp, RoundedCornerShape(12.dp))
+                .shadow(3.dp, RoundedCornerShape(12.dp), spotColor = Color(0xFF6D3804).copy(alpha = 0.35f))
                 .clip(RoundedCornerShape(12.dp))
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color(0xFFFFFDF5), Color(0xFFF7EEDD))
+                        listOf(Color(0xFFFFFFFF), Color(0xFFFFF9EE), Color(0xFFF5E8D6))
                     )
                 )
-                .border(1.dp, Color(0xFFE8DCC4), RoundedCornerShape(12.dp))
-                .padding(horizontal = 6.dp, vertical = 1.dp)
+                .border(1.2.dp, Color(0xFFFFE0B2), RoundedCornerShape(12.dp))
+                .padding(horizontal = 7.dp, vertical = 3.dp)
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 for (i in 1..3) {
                     val isEarned = i <= stage.stars
-                    Text(
-                        text = "★",
-                        fontSize = 11.sp,
-                        color = if (isEarned) Color(0xFFF59E0B) else Color(0xFFCBD5E1),
-                        style = TextStyle(
-                            shadow = if (isEarned) Shadow(
-                                color = Color(0xFFB45309),
-                                offset = Offset(0f, 1f),
-                                blurRadius = 1f
-                            ) else null
-                        )
+                    Canvas3DStar(
+                        isEarned = isEarned,
+                        modifier = Modifier.size(12.dp)
                     )
                 }
             }
@@ -909,41 +920,38 @@ private fun CurrentHeroStageNode(
             )
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // Crowned Mascot Pin (Strawberry Jelly)
+                // 3D Crowned Mascot Hero (Strawberry Jelly)
                 Box(
                     modifier = Modifier
-                        .offset(y = (bounceOffset + 6).dp)
-                        .size(42.dp)
-                        .shadow(4.dp, CircleShape)
+                        .offset(y = (bounceOffset + 4).dp)
+                        .size(50.dp)
+                        .shadow(6.dp, CircleShape, spotColor = Color(0xFF6D3804))
                         .clip(CircleShape)
                         .background(
-                            Brush.verticalGradient(
-                                listOf(Color(0xFFFFF4B8), Color(0xFFF59E0B))
+                            Brush.radialGradient(
+                                listOf(Color(0xFFFFF9DB), Color(0xFFFFD54F), Color(0xFFD97706))
                             )
                         )
-                        .padding(2.dp),
+                        .border(1.5.dp, Color(0xFFFFFBEA), CircleShape)
+                        .padding(2.5.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(CircleShape)
-                            .background(Color.White),
+                            .background(
+                                Brush.radialGradient(
+                                    listOf(Color(0xFFFFFDF8), Color(0xFFFFEEF2))
+                                )
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Text(text = "👑", fontSize = 12.sp, lineHeight = 12.sp)
-                            Text(
-                                text = "🍓",
-                                fontSize = 16.sp,
-                                lineHeight = 16.sp,
-                                modifier = Modifier.offset(y = (-3).dp)
-                            )
-                        }
+                        CanvasStrawberryMascot(
+                            modifier = Modifier.fillMaxSize().padding(1.dp),
+                            withCrown = true,
+                            animated = false
+                        )
                     }
                 }
 
@@ -1119,26 +1127,21 @@ private fun LockedStageNode(stage: SagaStage) {
         // 3D Cool Golden Padlock perched on TOP
         Box(
             modifier = Modifier
-                .offset(y = (-8).dp)
+                .offset(y = (-7).dp)
                 .zIndex(2f)
-                .shadow(3.dp, CircleShape)
+                .shadow(3.dp, CircleShape, spotColor = Color(0xFF451A03).copy(alpha = 0.35f))
                 .clip(CircleShape)
                 .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            Color(0xFFFFF4B8),
-                            Color(0xFFFFD166),
-                            Color(0xFFD97706)
-                        )
+                    Brush.radialGradient(
+                        listOf(Color(0xFFFFFDF5), Color(0xFFFEF3C7))
                     )
                 )
-                .border(1.5.dp, Color(0xFFFFF9DB), CircleShape)
-                .padding(horizontal = 6.dp, vertical = 2.dp),
+                .border(1.dp, Color(0xFFFFD166), CircleShape)
+                .padding(3.5.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "🔒",
-                fontSize = 11.sp
+            CanvasGoldenPadlock(
+                modifier = Modifier.size(15.dp, 16.dp)
             )
         }
     }
@@ -1227,15 +1230,53 @@ private fun RusticWoodenSignpost(title: String) {
 
 @Composable
 private fun CandyPeakSummit() {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = "🏰", fontSize = 32.sp)
-        Text(
-            text = "CANDY PEAK SUMMIT",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Black,
-            color = Color(0xFF3B4A43).copy(alpha = 0.6f),
-            letterSpacing = 1.sp
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(bottom = 12.dp)
+    ) {
+        // Grand 3D Candy Citadel Vector Landmark
+        CanvasCandyCitadel(
+            modifier = Modifier.size(width = 110.dp, height = 75.dp)
         )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // 3D Golden Summit Plaque
+        Box(
+            modifier = Modifier
+                .shadow(4.dp, RoundedCornerShape(12.dp), spotColor = Color(0xFF6D3804).copy(alpha = 0.4f))
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFF78350F))
+                .padding(bottom = 2.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(11.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color(0xFFFFF7ED), Color(0xFFFFEDD5), Color(0xFFFED7AA))
+                        )
+                    )
+                    .border(1.2.dp, Color(0xFFFDBA74), RoundedCornerShape(11.dp))
+                    .padding(horizontal = 14.dp, vertical = 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "CANDY PEAK SUMMIT",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF7C2D12),
+                    letterSpacing = 1.2.sp,
+                    style = TextStyle(
+                        shadow = Shadow(
+                            color = Color.White.copy(alpha = 0.8f),
+                            offset = Offset(0f, 1f),
+                            blurRadius = 0f
+                        )
+                    )
+                )
+            }
+        }
     }
 }
 
@@ -1247,31 +1288,134 @@ private fun CandyPeakSummit() {
 private fun MapBackgroundScenery() {
     Canvas(modifier = Modifier.fillMaxSize()) {
         val w = size.width
+        val h = size.height
 
-        // Fluffy Marshmallow Clouds in Upper Sky
-        drawRoundRect(
-            color = Color.White.copy(alpha = 0.85f),
-            topLeft = Offset(w * 0.08f, 70.dp.toPx()),
-            size = Size(100.dp.toPx(), 32.dp.toPx()),
-            cornerRadius = CornerRadius(16.dp.toPx(), 16.dp.toPx())
-        )
-        drawCircle(
-            color = Color.White.copy(alpha = 0.90f),
-            radius = 24.dp.toPx(),
-            center = Offset(w * 0.16f, 74.dp.toPx())
+        // 1. Distant Pastel Candy Hills (Gentle organic dunes)
+        val hill1Path = Path().apply {
+            moveTo(-20f, h * 0.42f)
+            cubicTo(
+                w * 0.25f, h * 0.38f,
+                w * 0.65f, h * 0.46f,
+                w + 20f, h * 0.40f
+            )
+            lineTo(w + 20f, h + 20f)
+            lineTo(-20f, h + 20f)
+            close()
+        }
+        drawPath(
+            path = hill1Path,
+            brush = Brush.verticalGradient(
+                listOf(
+                    Color(0x30BEE3F8), // Soft sky blue horizon haze
+                    Color(0x30C6F6D5), // Mint pastel
+                    Color(0x209AE6B4)
+                )
+            )
         )
 
-        drawRoundRect(
-            color = Color.White.copy(alpha = 0.80f),
-            topLeft = Offset(w * 0.72f, 100.dp.toPx()),
-            size = Size(80.dp.toPx(), 28.dp.toPx()),
-            cornerRadius = CornerRadius(14.dp.toPx(), 14.dp.toPx())
+        val hill2Path = Path().apply {
+            moveTo(-20f, h * 0.68f)
+            cubicTo(
+                w * 0.35f, h * 0.74f,
+                w * 0.75f, h * 0.64f,
+                w + 20f, h * 0.70f
+            )
+            lineTo(w + 20f, h + 20f)
+            lineTo(-20f, h + 20f)
+            close()
+        }
+        drawPath(
+            path = hill2Path,
+            brush = Brush.verticalGradient(
+                listOf(
+                    Color(0x25FED7AA), // Peach sugar hill
+                    Color(0x25FBD38D),
+                    Color(0x15F6AD55)
+                )
+            )
         )
-        drawCircle(
-            color = Color.White.copy(alpha = 0.85f),
-            radius = 20.dp.toPx(),
-            center = Offset(w * 0.82f, 102.dp.toPx())
-        )
+
+        // 2. Helper lambda for 3D Fluffy Marshmallow Clouds
+        fun drawMarshmallowCloud(cx: Float, cy: Float, scale: Float, alpha: Float) {
+            val baseW = 110.dp.toPx() * scale
+            val baseH = 34.dp.toPx() * scale
+            val r = 17.dp.toPx() * scale
+
+            // Cloud Under-Shadow
+            drawRoundRect(
+                color = Color(0xFFC7D2FE).copy(alpha = alpha * 0.45f),
+                topLeft = Offset(cx - baseW / 2f, cy - baseH / 2f + 3.dp.toPx() * scale),
+                size = Size(baseW, baseH),
+                cornerRadius = CornerRadius(r, r)
+            )
+
+            // Main Pill Body
+            drawRoundRect(
+                brush = Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = alpha),
+                        Color(0xFFF1F5F9).copy(alpha = alpha)
+                    )
+                ),
+                topLeft = Offset(cx - baseW / 2f, cy - baseH / 2f),
+                size = Size(baseW, baseH),
+                cornerRadius = CornerRadius(r, r)
+            )
+
+            // Puffy Circular Domes
+            drawCircle(
+                brush = Brush.radialGradient(
+                    listOf(Color.White.copy(alpha = alpha), Color(0xFFF8FAFC).copy(alpha = alpha)),
+                    center = Offset(cx - baseW * 0.16f, cy - baseH * 0.35f)
+                ),
+                radius = 24.dp.toPx() * scale,
+                center = Offset(cx - baseW * 0.16f, cy - baseH * 0.25f)
+            )
+            drawCircle(
+                brush = Brush.radialGradient(
+                    listOf(Color.White.copy(alpha = alpha), Color(0xFFF8FAFC).copy(alpha = alpha)),
+                    center = Offset(cx + baseW * 0.18f, cy - baseH * 0.25f)
+                ),
+                radius = 18.dp.toPx() * scale,
+                center = Offset(cx + baseW * 0.18f, cy - baseH * 0.20f)
+            )
+
+            // Specular Glaze Arc
+            drawOval(
+                brush = Brush.verticalGradient(
+                    listOf(Color.White.copy(alpha = alpha * 0.9f), Color.Transparent)
+                ),
+                topLeft = Offset(cx - baseW * 0.30f, cy - baseH * 0.70f),
+                size = Size(baseW * 0.40f, baseH * 0.50f)
+            )
+        }
+
+        // Upper Sky Clouds
+        drawMarshmallowCloud(cx = w * 0.18f, cy = 95.dp.toPx(), scale = 0.95f, alpha = 0.92f)
+        drawMarshmallowCloud(cx = w * 0.82f, cy = 135.dp.toPx(), scale = 0.80f, alpha = 0.88f)
+        drawMarshmallowCloud(cx = w * 0.45f, cy = 290.dp.toPx(), scale = 0.65f, alpha = 0.65f)
+        drawMarshmallowCloud(cx = w * 0.12f, cy = 520.dp.toPx(), scale = 0.75f, alpha = 0.60f)
+        drawMarshmallowCloud(cx = w * 0.88f, cy = 680.dp.toPx(), scale = 0.70f, alpha = 0.55f)
+
+        // 3. Ambient Twinkling Sugar Sparkles in Sky
+        fun drawSparkle(x: Float, y: Float, radius: Float) {
+            val sparkPath = Path().apply {
+                moveTo(x, y - radius)
+                cubicTo(x, y, x, y, x + radius, y)
+                cubicTo(x, y, x, y, x, y + radius)
+                cubicTo(x, y, x, y, x - radius, y)
+                cubicTo(x, y, x, y, x, y - radius)
+                close()
+            }
+            drawPath(path = sparkPath, color = Color.White.copy(alpha = 0.75f))
+            drawCircle(color = Color(0xFFFEF08A).copy(alpha = 0.9f), radius = radius * 0.35f, center = Offset(x, y))
+        }
+
+        drawSparkle(w * 0.36f, 80.dp.toPx(), 7.dp.toPx())
+        drawSparkle(w * 0.65f, 160.dp.toPx(), 5.dp.toPx())
+        drawSparkle(w * 0.92f, 240.dp.toPx(), 6.dp.toPx())
+        drawSparkle(w * 0.22f, 410.dp.toPx(), 5.dp.toPx())
+        drawSparkle(w * 0.78f, 560.dp.toPx(), 6.dp.toPx())
     }
 }
 
