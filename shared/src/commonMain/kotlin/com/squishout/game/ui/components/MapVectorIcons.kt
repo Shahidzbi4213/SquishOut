@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -429,7 +430,7 @@ fun Canvas3DStar(
         val starPath = Path()
         for (i in 0 until 10) {
             val r = if (i % 2 == 0) outerR else innerR
-            val angle = -Math.PI / 2 + i * (Math.PI / 5)
+            val angle = -PI / 2 + i * (PI / 5)
             val x = (cx + r * cos(angle)).toFloat()
             val y = (cy + r * sin(angle)).toFloat()
             if (i == 0) starPath.moveTo(x, y) else starPath.lineTo(x, y)
@@ -441,7 +442,7 @@ fun Canvas3DStar(
             val shadowPath = Path()
             for (i in 0 until 10) {
                 val r = if (i % 2 == 0) outerR else innerR
-                val angle = -Math.PI / 2 + i * (Math.PI / 5)
+                val angle = -PI / 2 + i * (PI / 5)
                 val x = (cx + r * cos(angle)).toFloat()
                 val y = (cy + 1.6.dp.toPx() + r * sin(angle)).toFloat()
                 if (i == 0) shadowPath.moveTo(x, y) else shadowPath.lineTo(x, y)
@@ -466,7 +467,7 @@ fun Canvas3DStar(
 
             // Embossed Facet Crease Lines (Center to outer tips)
             for (i in 0 until 5) {
-                val angle = -Math.PI / 2 + (i * 2) * (Math.PI / 5)
+                val angle = -PI / 2 + (i * 2) * (PI / 5)
                 val tipX = (cx + outerR * cos(angle)).toFloat()
                 val tipY = (cy + outerR * sin(angle)).toFloat()
                 drawLine(
@@ -804,7 +805,7 @@ private fun DrawScope.drawSugarBlossom(cx: Float, cy: Float, w: Float, h: Float)
     val dist = w * 0.22f
 
     for (i in 0 until 5) {
-        val angle = i * (Math.PI * 2 / 5)
+        val angle = i * (PI * 2 / 5)
         val px = (cx + dist * cos(angle)).toFloat()
         val py = (cy + dist * sin(angle)).toFloat()
 

@@ -5,6 +5,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toArgb
 import com.squishout.engine.model.Direction
 import kotlin.math.PI
@@ -27,7 +28,7 @@ class ParticleSystem(val maxParticles: Int = 180) {
     private val size = FloatArray(maxParticles)
     private val gravity = FloatArray(maxParticles)
     private val colors = IntArray(maxParticles)
-    private val shape = IntArray(maxParticles) // 0 = Circle droplet, 1 = Star sparkle, 2 = Shard
+    private val shape = IntArray(maxParticles) // 0 = Circle droplet, 1 = Star sparkle, 2 = Shard, 3 = Splatter ripple ring
 
     var activeCount: Int = 0
         private set
@@ -194,6 +195,57 @@ class ParticleSystem(val maxParticles: Int = 180) {
     }
 
     /**
+     * Spawns an expanding gelatin splatter wave ring on the tray floor upon launch takeoff.
+     */
+    fun spawnSplatterRing(
+        originX: Float,
+        originY: Float,
+        color: Color,
+        baseRadius: Float = 28f
+    ) {
+        if (activeCount >= maxParticles) return
+        val idx = activeCount++
+        x[idx] = originX
+        y[idx] = originY
+        vx[idx] = 0f
+        vy[idx] = 0f
+        val duration = 0.28f // 280ms
+        life[idx] = duration
+        maxLife[idx] = duration
+        size[idx] = baseRadius
+        gravity[idx] = 0f
+        colors[idx] = color.toArgb()
+        shape[idx] = 3 // Expanding Splatter Ring
+    }
+
+    /**
+     * Spawns fizzy carbonation bubbles drifting upward from awake entities.
+     */
+    fun spawnCarbonationBubbles(
+        originX: Float,
+        originY: Float,
+        color: Color,
+        count: Int = 5
+    ) {
+        val argb = color.toArgb()
+        for (i in 0 until count) {
+            if (activeCount >= maxParticles) break
+            val idx = activeCount++
+            x[idx] = originX + (Random.nextFloat() - 0.5f) * 20f
+            y[idx] = originY + (Random.nextFloat() - 0.5f) * 20f
+            vx[idx] = (Random.nextFloat() - 0.5f) * 35f
+            vy[idx] = -Random.nextFloat() * 60f - 25f // Floats upward
+            val duration = Random.nextFloat() * 0.25f + 0.22f
+            life[idx] = duration
+            maxLife[idx] = duration
+            size[idx] = Random.nextFloat() * 3.5f + 2f
+            gravity[idx] = -75f // Buoyancy floating up
+            colors[idx] = argb
+            shape[idx] = 0 // Small droplet
+        }
+    }
+
+    /**
      * Updates physics and draws active particles.
      * Operates in-place with O(1) removal to guarantee 0 GC allocations.
      */
@@ -270,6 +322,23 @@ class ParticleSystem(val maxParticles: Int = 180) {
                         color = particleColor,
                         topLeft = Offset(x[i] - currentRadius * 0.6f, y[i] - currentRadius * 0.6f),
                         size = Size(currentRadius * 1.2f, currentRadius * 1.2f)
+                    )
+                }
+                3 -> {
+                    // Expanding Gelatin Splatter Ripple Ring
+                    val progress = (1f - normalizedLife).coerceIn(0f, 1f)
+                    val rippleR = size[i] * (0.35f + progress * 1.65f)
+                    val strokeW = (size[i] * 0.18f * normalizedLife).coerceAtLeast(1.5f)
+                    drawScope.drawCircle(
+                        color = particleColor,
+                        radius = rippleR,
+                        center = Offset(x[i], y[i]),
+                        style = Stroke(width = strokeW)
+                    )
+                    drawScope.drawCircle(
+                        color = particleColor.copy(alpha = particleColor.alpha * 0.22f),
+                        radius = rippleR * 0.75f,
+                        center = Offset(x[i], y[i])
                     )
                 }
             }

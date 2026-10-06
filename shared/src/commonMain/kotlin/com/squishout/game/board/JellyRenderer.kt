@@ -34,7 +34,9 @@ object JellyRenderer {
         isHighlighted: Boolean = false,
         animTimeSeconds: Float = 0f,
         isPressed: Boolean = false,
-        wobbleOffset: Float = 0f
+        wobbleOffset: Float = 0f,
+        recoilOffset: Float = 0f,
+        touchPoint: Offset? = null
     ) {
         val (baseColor, lightColor, darkColor) = getColorPalette(jelly.type)
         val padding = tileSize * 0.08f
@@ -51,16 +53,16 @@ object JellyRenderer {
         // 1. Idle breathing pulse (harmonic volume preservation)
         val phase = (jelly.id.hashCode() and 0xFFFF) * 0.001f
         val breatheWave = sin(animTimeSeconds * 2.4f + phase)
-        val breatheScaleX = if (isPressed || abs(wobbleOffset) > 0.05f) 1f else 1f + breatheWave * 0.022f
-        val breatheScaleY = if (isPressed || abs(wobbleOffset) > 0.05f) 1f else 1f - breatheWave * 0.022f
+        val breatheScaleX = if (isPressed || abs(wobbleOffset) > 0.05f || abs(recoilOffset) > 0.05f) 1f else 1f + breatheWave * 0.022f
+        val breatheScaleY = if (isPressed || abs(wobbleOffset) > 0.05f || abs(recoilOffset) > 0.05f) 1f else 1f - breatheWave * 0.022f
 
         // 2. Touch anticipation squash under finger
         val pressScaleX = if (isPressed) 1.14f else 1f
         val pressScaleY = if (isPressed) 0.86f else 1f
         val pressOffsetY = if (isPressed) tileSize * 0.04f else 0f
 
-        // 3. Accordion pancake deformation against obstacles
-        val absWobble = abs(wobbleOffset)
+        // 3. Accordion pancake deformation against obstacles or when struck
+        val absWobble = maxOf(abs(wobbleOffset), abs(recoilOffset))
         val isWobbling = absWobble > 0.02f
         val (pancakeScaleX, pancakeScaleY) = if (isWobbling) {
             val isHorizontal = jelly.direction == Direction.EAST || jelly.direction == Direction.WEST
@@ -137,7 +139,7 @@ object JellyRenderer {
                 center = Offset(rectLeft + adjustedWidth * 0.6f, rectTop + adjustedHeight * 0.18f)
             )
 
-            // 6. Expressive Eyes and Mouth (with blinking and shock)
+            // 6. Expressive Eyes and Mouth (with blinking, glancing, and shock)
             drawFace(
                 drawScope = this,
                 eyeState = jelly.eyeState,
@@ -148,7 +150,8 @@ object JellyRenderer {
                 alpha = alpha,
                 animTimeSeconds = animTimeSeconds,
                 phase = phase,
-                isWobbling = isWobbling
+                isWobbling = isWobbling,
+                touchPoint = touchPoint
             )
         }
     }
@@ -207,7 +210,8 @@ object JellyRenderer {
         alpha: Float,
         animTimeSeconds: Float,
         phase: Float,
-        isWobbling: Boolean
+        isWobbling: Boolean,
+        touchPoint: Offset? = null
     ) {
         // Shift eye center slightly toward travel direction
         val eyeShiftX = direction.dx * tileSize * 0.08f
@@ -220,13 +224,22 @@ object JellyRenderer {
         val eyeRadius = tileSize * 0.075f
         val darkCharcoal = Color(0xFF261C2C).copy(alpha = alpha)
 
-        // Periodic eye blinking calculation (~3.6s cycle)
-        val blinkInterval = 3.6f + (phase * 10f) % 1.2f
+        // Natural double-blinking pattern (~3.6s cycle with occasional double-blinks)
+        val blinkInterval = 3.6f + (phase * 10f) % 1.4f
         val timeInBlinkCycle = (animTimeSeconds + phase) % blinkInterval
-        val isBlinking = timeInBlinkCycle < 0.14f && !isWobbling
+        val isDoubleBlink = ((phase * 100f).toInt() % 3 == 0)
+        val isBlinking = if (isDoubleBlink) {
+            (timeInBlinkCycle in 0f..0.12f) || (timeInBlinkCycle in 0.18f..0.28f)
+        } else {
+            timeInBlinkCycle in 0f..0.14f
+        } && !isWobbling
         val blinkScaleY = if (isBlinking) {
-            val p = timeInBlinkCycle / 0.14f
-            1f - sin(p * PI.toFloat()) * 0.85f
+            val p = if (isDoubleBlink && timeInBlinkCycle > 0.15f) {
+                ((timeInBlinkCycle - 0.18f) / 0.10f).coerceIn(0f, 1f)
+            } else {
+                (timeInBlinkCycle / 0.14f).coerceIn(0f, 1f)
+            }
+            1f - sin(p * PI.toFloat()) * 0.88f
         } else 1f
 
         if (isWobbling) {
@@ -248,9 +261,20 @@ object JellyRenderer {
                 style = Stroke(width = tileSize * 0.035f)
             )
         } else if (eyeState == EyeState.AWAKE) {
-            // Sparkling wide awake eyes with pupil glancing towards exit direction ( ✦‿✦ )
-            val pupilGlanceX = direction.dx * eyeRadius * 0.32f
-            val pupilGlanceY = direction.dy * eyeRadius * 0.32f
+            // Sparkling wide awake eyes with pupil glancing towards exit direction OR player finger ( ✦‿✦ )
+            val (pupilGlanceX, pupilGlanceY) = if (touchPoint != null) {
+                val tdx = touchPoint.x - faceCenterX
+                val tdy = touchPoint.y - faceCenterY
+                val dist = kotlin.math.hypot(tdx, tdy)
+                if (dist > 1f) {
+                    val maxGlance = eyeRadius * 0.44f
+                    Pair((tdx / dist) * maxGlance, (tdy / dist) * maxGlance)
+                } else {
+                    Pair(direction.dx * eyeRadius * 0.32f, direction.dy * eyeRadius * 0.32f)
+                }
+            } else {
+                Pair(direction.dx * eyeRadius * 0.32f, direction.dy * eyeRadius * 0.32f)
+            }
 
             if (blinkScaleY < 0.35f) {
                 // Closed blink arc
