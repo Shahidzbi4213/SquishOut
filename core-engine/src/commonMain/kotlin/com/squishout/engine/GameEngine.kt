@@ -98,9 +98,9 @@ class GameEngine {
             val afterRemoval = current.board.removeJellies(jelliesToRemove)
 
             // Collect all traversed tiles from launched jelly (and partner if linked)
-            val traversedJellyTiles = jelly.tiles + exitPath.filter { it.isWithinBounds(current.board.width, current.board.height) }
-            val traversedPartnerTiles = if (partner != null && partnerExitPath != null) {
-                partner.tiles + partnerExitPath.filter { it.isWithinBounds(current.board.width, current.board.height) }
+            val traversedJellyTiles = jelly.tiles + current.board.getAllEscapeTiles(jelly)
+            val traversedPartnerTiles = if (partner != null) {
+                partner.tiles + current.board.getAllEscapeTiles(partner)
             } else emptyList()
             val allTraversed = (traversedJellyTiles + traversedPartnerTiles).toSet()
 
@@ -111,7 +111,8 @@ class GameEngine {
 
             val isSolved = updatedBoard.isSolved
             val schoolingBonus = if (partner != null) 150 else 0
-            val points = 100 + (current.movesUsed * 5) + (shattered.size * 50) + (clearedFog.size * 25) + schoolingBonus
+            val bossBonus = if (jelly.isBoss) 300 else 0
+            val points = 100 + (current.movesUsed * 5) + (shattered.size * 50) + (clearedFog.size * 25) + schoolingBonus + bossBonus
             val newMoves = current.movesUsed + 1
             val stars = if (isSolved) calculateStars(newMoves, current.optimalMoves) else 0
 

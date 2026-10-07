@@ -41,26 +41,83 @@ data class Board(
     fun getJellyById(id: String): Jelly? = jellies.find { it.id == id }
 
     /**
+     * Returns the leading edge tiles of a jelly facing its movement direction.
+     * For 1x1 and 1x2 (Grape Eel), returns the single forward tile.
+     * For 2x2 King Jelly, returns the 2 leading tiles forming the front edge.
+     */
+    fun getLeadingTiles(jelly: Jelly): List<Position> {
+        return when (jelly.direction) {
+            Direction.NORTH -> {
+                val minY = jelly.tiles.minOf { it.y }
+                jelly.tiles.filter { it.y == minY }
+            }
+            Direction.SOUTH -> {
+                val maxY = jelly.tiles.maxOf { it.y }
+                jelly.tiles.filter { it.y == maxY }
+            }
+            Direction.WEST -> {
+                val minX = jelly.tiles.minOf { it.x }
+                jelly.tiles.filter { it.x == minX }
+            }
+            Direction.EAST -> {
+                val maxX = jelly.tiles.maxOf { it.x }
+                jelly.tiles.filter { it.x == maxX }
+            }
+        }
+    }
+
+    /**
+     * Traces a single escape ray from [startPos] in [initialDir],
+     * accounting for any 90-degree deflections from [WaterJet]s.
+     */
+    fun getCorridorFrom(startPos: Position, initialDir: Direction): List<Position> {
+        val path = mutableListOf<Position>()
+        val visited = mutableSetOf<Pair<Position, Direction>>()
+        var currentDir = initialDir
+        var current = startPos.step(currentDir)
+
+        while (current.isWithinBounds(width, height)) {
+            val state = current to currentDir
+            if (state in visited) {
+                return path // loop detected
+            }
+            visited.add(state)
+            path.add(current)
+
+            val jet = getWaterJetAt(current)
+            if (jet != null) {
+                currentDir = jet.direction
+            }
+            current = current.step(currentDir)
+        }
+        path.add(current)
+        return path
+    }
+
+    /**
      * Checks if a single jelly has an unblocked path to the board edge along its direction,
      * accounting for any 90-degree trajectory deflections from [WaterJet]s.
+     * For 2x2 King Jelly, verifies that BOTH parallel escape lanes are fully clear.
      * Optional [ignoredJellyIds] lets linked partners ignore each other during coordinated schooling exit.
      */
     fun canSingleJellyEscape(jelly: Jelly, ignoredJellyIds: Set<String> = emptySet()): Boolean {
-        val path = getEscapePath(jelly)
-        val lastPos = path.lastOrNull() ?: return false
-        // If the path didn't reach outside board bounds, it got trapped in a loop or dead end
-        if (lastPos.isWithinBounds(width, height)) {
-            return false
-        }
-
-        // If the path encounters any tile occupied by another object, it is blocked
-        for (pos in path) {
-            val otherJelly = getJellyAt(pos)
-            if (otherJelly != null && otherJelly.id != jelly.id && otherJelly.id !in ignoredJellyIds) {
+        val leadingTiles = getLeadingTiles(jelly)
+        for (lead in leadingTiles) {
+            val corridor = getCorridorFrom(lead, jelly.direction)
+            val lastPos = corridor.lastOrNull() ?: return false
+            // If the path didn't reach outside board bounds, it got trapped in a loop or dead end
+            if (lastPos.isWithinBounds(width, height)) {
                 return false
             }
-            if (getObstacleAt(pos) != null) {
-                return false
+            // If the path encounters any tile occupied by another object, it is blocked
+            for (pos in corridor) {
+                val otherJelly = getJellyAt(pos)
+                if (otherJelly != null && otherJelly.id != jelly.id && otherJelly.id !in ignoredJellyIds) {
+                    return false
+                }
+                if (getObstacleAt(pos) != null) {
+                    return false
+                }
             }
         }
         return true
@@ -82,33 +139,29 @@ data class Board(
     }
 
     /**
-     * Returns the sequence of grid positions a jelly traverses from its head to beyond the board edge.
-     * If the path encounters a [WaterJet] conveyor tile, its trajectory curves into the jet's direction.
+     * Returns the primary sequence of grid positions a jelly traverses for launch animation.
      */
     fun getEscapePath(jelly: Jelly): List<Position> {
-        val path = mutableListOf<Position>()
-        val visited = mutableSetOf<Pair<Position, Direction>>()
-        var currentDir = jelly.direction
-        var current = jelly.headPosition.step(currentDir)
+        val leadingTiles = getLeadingTiles(jelly)
+        val anchorLead = leadingTiles.minByOrNull { it.x + it.y } ?: jelly.headPosition
+        return getCorridorFrom(anchorLead, jelly.direction)
+    }
 
-        while (current.isWithinBounds(width, height)) {
-            val state = current to currentDir
-            if (state in visited) {
-                // Loop detected (e.g. whirlpool loop of deflecting jets)
-                return path
+    /**
+     * Returns all grid tiles traversed across all escape corridors for this jelly while in-bounds.
+     */
+    fun getAllEscapeTiles(jelly: Jelly): Set<Position> {
+        val leadingTiles = getLeadingTiles(jelly)
+        val allTiles = mutableSetOf<Position>()
+        for (lead in leadingTiles) {
+            val corridor = getCorridorFrom(lead, jelly.direction)
+            for (pos in corridor) {
+                if (pos.isWithinBounds(width, height)) {
+                    allTiles.add(pos)
+                }
             }
-            visited.add(state)
-            path.add(current)
-
-            val jet = getWaterJetAt(current)
-            if (jet != null) {
-                currentDir = jet.direction
-            }
-            current = current.step(currentDir)
         }
-        // Add the off-screen exit position
-        path.add(current)
-        return path
+        return allTiles
     }
 
     /**

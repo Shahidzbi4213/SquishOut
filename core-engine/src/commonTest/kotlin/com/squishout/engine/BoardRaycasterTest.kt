@@ -153,4 +153,34 @@ class BoardRaycasterTest {
         assertFalse(clearedBoard.isFoggy(Position(2, 1)))
         assertTrue(clearedBoard.isFoggy(Position(5, 5)))
     }
+
+    @Test
+    fun testKingJellyDualCorridorUnblockedEscapes() {
+        // 2x2 King Jelly at (2, 2). Occupies (2,2), (3,2), (2,3), (3,3) facing NORTH
+        val kingTiles = listOf(Position(2, 2), Position(3, 2), Position(2, 3), Position(3, 3))
+        val king = Jelly("king", JellyType.KING_JELLY, Direction.NORTH, kingTiles)
+        val board = Board(jellies = listOf(king)).withUpdatedEyeStates()
+
+        assertTrue(board.canJellyEscape(king))
+        assertEquals(EyeState.AWAKE, board.getJellyById("king")?.eyeState)
+    }
+
+    @Test
+    fun testKingJellyBlockedInOneCorridorIsAsleep() {
+        // 2x2 King Jelly at (2, 2) facing NORTH
+        val kingTiles = listOf(Position(2, 2), Position(3, 2), Position(2, 3), Position(3, 3))
+        val king = Jelly("king", JellyType.KING_JELLY, Direction.NORTH, kingTiles)
+        // Blocker at (3, 0) blocking only lane 3 (lane 2 is completely clear)
+        val blocker = Obstacle("rock", ObstacleType.ROCK_MOUNTAIN, Position(3, 0))
+
+        val board = Board(jellies = listOf(king), obstacles = listOf(blocker)).withUpdatedEyeStates()
+
+        assertFalse(board.canJellyEscape(king))
+        assertEquals(EyeState.ASLEEP, board.getJellyById("king")?.eyeState)
+
+        // When blocker is removed, king becomes AWAKE
+        val clearBoard = Board(jellies = listOf(king)).withUpdatedEyeStates()
+        assertTrue(clearBoard.canJellyEscape(king))
+        assertEquals(EyeState.AWAKE, clearBoard.getJellyById("king")?.eyeState)
+    }
 }

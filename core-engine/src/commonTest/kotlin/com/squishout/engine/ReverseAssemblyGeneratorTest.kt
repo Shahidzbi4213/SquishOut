@@ -36,4 +36,22 @@ class ReverseAssemblyGeneratorTest {
             )
         }
     }
+
+    @Test
+    fun testLevelWithKingJellyIsSolvable() {
+        val config = LevelConfig(
+            stageNumber = 20,
+            jellyCount = 14,
+            obstacleCount = 1,
+            includeMultiCell = true,
+            includeKingJelly = true,
+            seed = 777L
+        )
+        val level = generator.generate(config)
+        val king = level.initialBoard.jellies.find { it.type == com.squishout.engine.model.JellyType.KING_JELLY }
+
+        assertTrue(king != null, "Level 20 boss should contain a KING_JELLY")
+        assertTrue(level.initialBoard.awakeJellies.isNotEmpty(), "Boss board must have awake jellies to start")
+        assertTrue(generator.verifySolvable(level.initialBoard), "Boss level with 2x2 King Jelly must be 100% solvable")
+    }
 }

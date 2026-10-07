@@ -55,6 +55,13 @@ class GameViewModel(
     private val _shatteredObstacles = MutableStateFlow<List<com.squishout.engine.model.Obstacle>>(emptyList())
     val shatteredObstacles: StateFlow<List<com.squishout.engine.model.Obstacle>> = _shatteredObstacles.asStateFlow()
 
+    private val _comboCount = MutableStateFlow(0)
+    val comboCount: StateFlow<Int> = _comboCount.asStateFlow()
+
+    private val _comboCallout = MutableStateFlow<String?>(null)
+    val comboCallout: StateFlow<String?> = _comboCallout.asStateFlow()
+
+    private var lastLaunchTimeMs = 0L
     private var currentStage = 1
 
     init {
@@ -71,6 +78,7 @@ class GameViewModel(
             includeWaterJets = stage >= 4,
             includeSchoolingPairs = stage >= 6,
             includeBubbleFog = stage >= 8,
+            includeKingJelly = stage >= 10 && (stage % 5 == 0 || stage >= 30),
             seed = stage * 1000L + 42L
         )
         val level = generator.generate(config)
@@ -80,6 +88,9 @@ class GameViewModel(
         _blockerRecoils.value = emptyMap()
         _flyingRewards.value = emptyList()
         _shatteredObstacles.value = emptyList()
+        _comboCount.value = 0
+        _comboCallout.value = null
+        lastLaunchTimeMs = 0L
     }
 
     private fun playSound(sound: SoundEffect) {
@@ -102,15 +113,44 @@ class GameViewModel(
         val result = engine.onTileTapped(pos)
         when (result) {
             is TapResult.Launched -> {
+                val now = com.squishout.game.util.currentTimeMillis()
+                val isCombo = (now - lastLaunchTimeMs) <= 1400L && lastLaunchTimeMs > 0L
+                lastLaunchTimeMs = now
+
+                val currentCombo = if (isCombo) (_comboCount.value + 1).coerceAtMost(5) else 1
+                _comboCount.value = currentCombo
+
                 if (result.shatteredObstacles.isNotEmpty()) {
                     playSound(SoundEffect.CRACK)
                     triggerHaptic(HapticFeedbackType.CRACK_THUMP)
+                } else if (result.jelly.isBoss) {
+                    playSound(SoundEffect.VICTORY)
+                    triggerHaptic(HapticFeedbackType.VICTORY_FANFARE)
                 } else if (result.partnerJelly != null) {
                     playSound(SoundEffect.BOOSTER)
                     triggerHaptic(HapticFeedbackType.VICTORY_FANFARE)
+                } else if (currentCombo >= 2) {
+                    playSound(SoundEffect.COMBO)
+                    triggerHaptic(HapticFeedbackType.LIGHT_CLICK)
                 } else {
                     playSound(SoundEffect.POP)
                     triggerHaptic(HapticFeedbackType.LIGHT_CLICK)
+                }
+
+                if (currentCombo >= 2) {
+                    val callout = when (currentCombo) {
+                        2 -> "Sweet! 2x"
+                        3 -> "Juicy! 3x"
+                        4 -> "Super! 4x"
+                        else -> "Squish-tastic! 5x"
+                    }
+                    _comboCallout.value = callout
+                    viewModelScope.launch {
+                        delay(1200)
+                        if (_comboCallout.value == callout) {
+                            _comboCallout.value = null
+                        }
+                    }
                 }
 
                 // Animate launch (handles single or symbiotic partner pair)
@@ -157,6 +197,8 @@ class GameViewModel(
                 }
             }
             is TapResult.Blocked -> {
+                _comboCount.value = 0
+                _comboCallout.value = null
                 playSound(SoundEffect.WOBBLE)
                 triggerHaptic(HapticFeedbackType.ERROR_WOBBLE)
                 animateWobble(result.jelly.id, result.blockerPosition)

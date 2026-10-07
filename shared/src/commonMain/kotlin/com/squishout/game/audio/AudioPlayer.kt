@@ -5,7 +5,8 @@ enum class SoundEffect {
     WOBBLE,    // Soft refusal bump on blocked tap
     VICTORY,   // Ascending chord fanfare on stage cleared
     BOOSTER,   // Sparkle shimmer on Hint/Undo/Wand
-    CRACK      // Crisp shattering sound on obstacle damage/break
+    CRACK,     // Crisp shattering sound on obstacle damage/break
+    COMBO      // Sparkling musical arpeggio for rapid combo streak
 }
 
 enum class HapticFeedbackType {

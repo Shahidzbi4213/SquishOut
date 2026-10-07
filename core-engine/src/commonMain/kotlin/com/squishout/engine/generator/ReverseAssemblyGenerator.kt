@@ -18,6 +18,7 @@ data class LevelConfig(
     val includeWaterJets: Boolean = false,
     val includeSchoolingPairs: Boolean = false,
     val includeBubbleFog: Boolean = false,
+    val includeKingJelly: Boolean = false,
     val seed: Long? = null
 )
 
@@ -95,6 +96,41 @@ class ReverseAssemblyGenerator {
         )
         val placedJellies = mutableListOf<Jelly>()
         var jellyIndex = 0
+
+        // 2b. Place 2x2 King Jelly Boss if enabled
+        if (config.includeKingJelly) {
+            val kingTopLeftCandidates = (1..3).flatMap { x ->
+                (1..3).map { y -> Position(x, y) }
+            }.shuffled(random)
+
+            for (topLeft in kingTopLeftCandidates) {
+                val kingTiles = listOf(
+                    topLeft,
+                    Position(topLeft.x + 1, topLeft.y),
+                    Position(topLeft.x, topLeft.y + 1),
+                    Position(topLeft.x + 1, topLeft.y + 1)
+                )
+                val allFree = kingTiles.none { board.isTileOccupied(it) }
+                if (allFree) {
+                    val candidateDirs = Direction.entries.shuffled(random)
+                    for (dir in candidateDirs) {
+                        val tempKing = Jelly(
+                            id = "king_boss",
+                            type = JellyType.KING_JELLY,
+                            direction = dir,
+                            tiles = kingTiles
+                        )
+                        if (board.canJellyEscape(tempKing)) {
+                            placedJellies.add(tempKing)
+                            board = board.copy(jellies = placedJellies)
+                            jellyIndex++
+                            break
+                        }
+                    }
+                    if (placedJellies.isNotEmpty()) break
+                }
+            }
+        }
 
         // 3. Reverse-assembly placement loop
         // We iterate and place jellies that have an open exit ray at the moment of placement

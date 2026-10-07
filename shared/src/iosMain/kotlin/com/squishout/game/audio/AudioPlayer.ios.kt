@@ -19,6 +19,7 @@ actual class AudioPlayer {
             SoundEffect.VICTORY -> 1025u // Fanfare chime
             SoundEffect.BOOSTER -> 1054u // Shimmer tick
             SoundEffect.CRACK -> 1052u // Shatter / crisp tick
+            SoundEffect.COMBO -> 1105u // High pleasant pop
         }
         AudioServicesPlaySystemSound(soundId)
     }

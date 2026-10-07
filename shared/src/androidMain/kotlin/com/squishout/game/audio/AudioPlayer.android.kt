@@ -28,6 +28,7 @@ actual class AudioPlayer(private val context: Context) {
             tracks[SoundEffect.VICTORY] = createTrack(generateVictory())
             tracks[SoundEffect.BOOSTER] = createTrack(generateBooster())
             tracks[SoundEffect.CRACK] = createTrack(generateCrack())
+            tracks[SoundEffect.COMBO] = createTrack(generateCombo())
         } catch (_: Throwable) {
             // AudioTrack creation fallback
         }
@@ -160,6 +161,30 @@ actual class AudioPlayer(private val context: Context) {
             val tone = kotlin.math.sin(phase1) * 0.65 + kotlin.math.sin(phase2) * 0.35
             val sample = ((tone + noise) * envelope * 24000.0).toInt().coerceIn(-32767, 32767)
             buffer[i] = sample.toShort()
+        }
+        return buffer
+    }
+
+    private fun generateCombo(): ShortArray {
+        val sampleRate = 44100
+        val noteCount = 3
+        val noteDur = 0.05 // 50ms each
+        val totalSamples = (sampleRate * noteDur * noteCount).toInt()
+        val buffer = ShortArray(totalSamples)
+        val freqs = doubleArrayOf(880.0, 1100.0, 1320.0) // A5 -> C#6 -> E6 ascending arpeggio
+
+        for (n in 0 until noteCount) {
+            val startSample = (n * noteDur * sampleRate).toInt()
+            val endSample = ((n + 1) * noteDur * sampleRate).toInt()
+            var phase = 0.0
+            val freq = freqs[n]
+            for (i in startSample until endSample) {
+                val t = (i - startSample).toDouble() / sampleRate
+                phase += 2.0 * kotlin.math.PI * freq / sampleRate
+                val envelope = kotlin.math.exp(-t * 35.0)
+                val sample = (kotlin.math.sin(phase) * envelope * 24000.0).toInt().coerceIn(-32767, 32767)
+                buffer[i] = sample.toShort()
+            }
         }
         return buffer
     }

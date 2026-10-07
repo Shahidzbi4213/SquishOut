@@ -98,7 +98,7 @@ fun SagaMapScreen(
     canClaimDaily: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    val totalStages = 50
+    val totalStages = 80
     val recordMap = levelRecords.associateBy { it.levelNumber }
     val currentUnlocked = session.currentStage.coerceAtMost(totalStages)
 
@@ -110,7 +110,8 @@ fun SagaMapScreen(
         val biome = when (stageNum) {
             1 -> "SWEET MEADOW • LVL 1–20"
             21 -> "SODA LAGOON • LVL 21–40"
-            41 -> "HONEYCOMB VALLEY • LVL 41+"
+            41 -> "HONEYCOMB VALLEY • LVL 41–60"
+            61 -> "COTTON CANDY PEAK • LVL 61–80"
             else -> null
         }
         SagaStage(stageNum, isUnlocked, isCurrent, stars, biome)

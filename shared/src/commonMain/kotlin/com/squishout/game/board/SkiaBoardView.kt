@@ -1,18 +1,28 @@
 package com.squishout.game.board
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -22,18 +32,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.squishout.engine.model.Board
 import com.squishout.engine.model.Direction
 import com.squishout.engine.model.Jelly
@@ -57,13 +74,15 @@ fun SkiaBoardView(
     wobbleOffsetsFlow: StateFlow<Map<String, Float>>? = null,
     blockerRecoilsFlow: StateFlow<Map<Position, Float>>? = null,
     flyingRewardsFlow: StateFlow<List<FlyingRewardToken>>? = null,
-    shatteredObstaclesFlow: StateFlow<List<Obstacle>>? = null
+    shatteredObstaclesFlow: StateFlow<List<Obstacle>>? = null,
+    comboCalloutFlow: StateFlow<String?>? = null
 ) {
     val activeLaunches by (activeLaunchesFlow?.collectAsState() ?: remember { mutableStateOf(emptyList()) })
     val wobbleOffsets by (wobbleOffsetsFlow?.collectAsState() ?: remember { mutableStateOf(emptyMap()) })
     val blockerRecoils by (blockerRecoilsFlow?.collectAsState() ?: remember { mutableStateOf(emptyMap()) })
     val flyingRewards by (flyingRewardsFlow?.collectAsState() ?: remember { mutableStateOf(emptyList()) })
     val shatteredObstacles by (shatteredObstaclesFlow?.collectAsState() ?: remember { mutableStateOf(emptyList()) })
+    val comboCallout by (comboCalloutFlow?.collectAsState() ?: remember { mutableStateOf(null) })
     val biome = com.squishout.game.theme.BiomeTheme.forStage(stage)
 
     // 1. Continuous DrawPhase Animation Clock (Skipping UI recomposition)
@@ -466,11 +485,11 @@ fun SkiaBoardView(
                         exitDir = currentDir,
                         count = 10
                     )
-                    if (launch.isFeverClimax) {
+                    if (launch.isFeverClimax || launch.jelly.isBoss) {
                         particleSystem.spawnStarBurst(
-                            originX = currentOffset.x + tileSize / 2f,
-                            originY = currentOffset.y + tileSize / 2f,
-                            count = 24
+                            originX = currentOffset.x + (if (launch.jelly.isBoss) tileSize else tileSize / 2f),
+                            originY = currentOffset.y + (if (launch.jelly.isBoss) tileSize else tileSize / 2f),
+                            count = if (launch.jelly.isBoss) 36 else 24
                         )
                     }
                 }
@@ -561,7 +580,45 @@ fun SkiaBoardView(
             particleSystem.updateAndDraw(this, 0.016f)
         }
     }
-}
+
+    // 8. Floating Combo Streak Pill Overlay
+        AnimatedVisibility(
+            visible = comboCallout != null,
+            enter = fadeIn() + scaleIn(initialScale = 0.7f),
+            exit = fadeOut() + scaleOut(),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 10.dp)
+        ) {
+            val text = comboCallout ?: ""
+            Box(
+                modifier = Modifier
+                    .shadow(12.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFF59E0B))
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(
+                                Color(0xFFFFB703),
+                                Color(0xFFFF4D6D),
+                                Color(0xFF9D4EDD)
+                            )
+                        )
+                    )
+                    .border(2.dp, Color.White, RoundedCornerShape(20.dp))
+                    .padding(horizontal = 18.dp, vertical = 7.dp)
+            ) {
+                Text(
+                    text = "⚡ $text",
+                    style = TextStyle(
+                        color = Color.White,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 17.sp,
+                        shadow = Shadow(Color.Black.copy(alpha = 0.45f), Offset(1f, 2f), 3f)
+                    )
+                )
+            }
+        }
+    }
 }
 
 /**

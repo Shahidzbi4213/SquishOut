@@ -88,6 +88,7 @@ fun GameScreen(
                         blockerRecoilsFlow = viewModel.blockerRecoils,
                         flyingRewardsFlow = viewModel.flyingRewards,
                         shatteredObstaclesFlow = viewModel.shatteredObstacles,
+                        comboCalloutFlow = viewModel.comboCallout,
                         onTileTapped = viewModel::onTileTapped
                     )
                 }

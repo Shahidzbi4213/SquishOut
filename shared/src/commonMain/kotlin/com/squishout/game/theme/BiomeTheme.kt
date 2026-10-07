@@ -47,7 +47,7 @@ data class BiomeTheme(
         val HONEYCOMB_VALLEY = BiomeTheme(
             id = "honeycomb_valley",
             name = "Honeycomb Valley",
-            subtitle = "Stages 41+",
+            subtitle = "Stages 41 - 60",
             icon = "🍯",
             backgroundTop = Color(0xFFFFFBEB),
             backgroundBottom = Color(0xFFFDE68A),
@@ -58,10 +58,25 @@ data class BiomeTheme(
             accentText = Color(0xFF92400E)
         )
 
+        val COTTON_CANDY_PEAK = BiomeTheme(
+            id = "cotton_candy_peak",
+            name = "Cotton Candy Peak",
+            subtitle = "Stages 61 - 80",
+            icon = "☁️",
+            backgroundTop = Color(0xFFFDF4FF),
+            backgroundBottom = Color(0xFFF5D0FE),
+            trayRimLight = Color(0xFFFAF5FF),
+            trayRimDark = Color(0xFFE879F9),
+            trayFloor = Color(0xFFFDF4FF),
+            accentPill = Color(0xFFC026D3),
+            accentText = Color(0xFF701A75)
+        )
+
         fun forStage(stage: Int): BiomeTheme = when {
             stage <= 20 -> SWEET_MEADOW
             stage <= 40 -> SODA_LAGOON
-            else -> HONEYCOMB_VALLEY
+            stage <= 60 -> HONEYCOMB_VALLEY
+            else -> COTTON_CANDY_PEAK
         }
     }
 }

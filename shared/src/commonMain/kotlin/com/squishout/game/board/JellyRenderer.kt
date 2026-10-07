@@ -113,6 +113,11 @@ object JellyRenderer {
             // 3. Directional Snout / Sprout
             drawDirectionalSnout(this, jelly.direction, rectLeft, rectTop, adjustedWidth, adjustedHeight, tileSize, baseColor, alpha)
 
+            // 3b. Royal Golden Crown for Boss King Jelly
+            if (jelly.isBoss) {
+                drawKingCrown(this, cx, rectTop, tileSize, alpha)
+            }
+
             // 4. Awake Sparkling Rim Glow
             if (jelly.eyeState == EyeState.AWAKE) {
                 val rimColor = if (isHighlighted) SquishColors.StarGold else Color.White
@@ -408,6 +413,61 @@ object JellyRenderer {
         }
     }
 
+    private fun drawKingCrown(
+        drawScope: DrawScope,
+        cx: Float,
+        crownBottomY: Float,
+        tileSize: Float,
+        alpha: Float
+    ) {
+        val crownWidth = tileSize * 0.95f
+        val crownHeight = tileSize * 0.46f
+        val cy = crownBottomY + tileSize * 0.04f
+
+        val crownPath = Path().apply {
+            moveTo(cx - crownWidth / 2f, cy)
+            lineTo(cx - crownWidth * 0.52f, cy - crownHeight * 0.72f) // left peak
+            lineTo(cx - crownWidth * 0.2f, cy - crownHeight * 0.38f)  // left valley
+            lineTo(cx, cy - crownHeight)                             // center hero peak
+            lineTo(cx + crownWidth * 0.2f, cy - crownHeight * 0.38f)  // right valley
+            lineTo(cx + crownWidth * 0.52f, cy - crownHeight * 0.72f) // right peak
+            lineTo(cx + crownWidth / 2f, cy)
+            close()
+        }
+
+        drawScope.apply {
+            // Crown Drop Shadow
+            drawPath(
+                path = crownPath,
+                color = Color.Black.copy(alpha = 0.25f * alpha)
+            )
+            // Gold Gradient Body
+            drawPath(
+                path = crownPath,
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFFFFF07C).copy(alpha = alpha),
+                        Color(0xFFF59E0B).copy(alpha = alpha),
+                        Color(0xFFB45309).copy(alpha = alpha)
+                    ),
+                    startY = cy - crownHeight,
+                    endY = cy
+                )
+            )
+            // Golden Rim Border
+            drawPath(
+                path = crownPath,
+                color = Color(0xFF78350F).copy(alpha = alpha),
+                style = Stroke(width = tileSize * 0.04f, cap = StrokeCap.Round)
+            )
+            // 3 Gem Jewels on Peaks
+            val jewelRadius = tileSize * 0.05f
+            drawCircle(Color(0xFFE11D48).copy(alpha = alpha), radius = jewelRadius, center = Offset(cx - crownWidth * 0.52f, cy - crownHeight * 0.72f))
+            drawCircle(Color(0xFF0284C7).copy(alpha = alpha), radius = jewelRadius * 1.25f, center = Offset(cx, cy - crownHeight))
+            drawCircle(Color(0xFF10B981).copy(alpha = alpha), radius = jewelRadius, center = Offset(cx + crownWidth * 0.52f, cy - crownHeight * 0.72f))
+        }
+    }
+
     fun getPalette(type: JellyType): Triple<Color, Color, Color> = getColorPalette(type)
 
     private fun getColorPalette(type: JellyType): Triple<Color, Color, Color> =
@@ -417,5 +477,6 @@ object JellyRenderer {
             JellyType.LEMON -> Triple(SquishColors.Lemon, SquishColors.LemonLight, SquishColors.LemonDark)
             JellyType.KIWI -> Triple(SquishColors.Kiwi, SquishColors.KiwiLight, SquishColors.KiwiDark)
             JellyType.GRAPE_EEL -> Triple(SquishColors.Grape, SquishColors.GrapeLight, SquishColors.GrapeDark)
+            JellyType.KING_JELLY -> Triple(Color(0xFFFB8500), Color(0xFFFED7AA), Color(0xFFC2410C))
         }
 }

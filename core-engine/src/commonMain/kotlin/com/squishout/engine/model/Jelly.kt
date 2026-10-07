@@ -4,13 +4,15 @@ enum class JellyType(
     val defaultDirection: Direction,
     val hexColor: String,
     val displayName: String,
-    val length: Int = 1
+    val length: Int = 1,
+    val isBoss: Boolean = false
 ) {
     STRAWBERRY(Direction.NORTH, "#FF4D6D", "Strawberry Blobby"),
     BLUEBERRY(Direction.EAST, "#00B4D8", "Blueberry Drop"),
     LEMON(Direction.WEST, "#FFB703", "Lemon Zest"),
     KIWI(Direction.SOUTH, "#06D6A0", "Kiwi Gummy"),
-    GRAPE_EEL(Direction.NORTH, "#9D4EDD", "Grape Eel Duo", length = 2);
+    GRAPE_EEL(Direction.NORTH, "#9D4EDD", "Grape Eel Duo", length = 2),
+    KING_JELLY(Direction.NORTH, "#FB8500", "Honeycomb King Jelly", length = 2, isBoss = true);
 }
 
 enum class EyeState {
@@ -31,6 +33,7 @@ data class Jelly(
     }
 
     val isLinked: Boolean get() = linkedJellyId != null
+    val isBoss: Boolean get() = type.isBoss
 
     val headPosition: Position
         get() = when (direction) {
