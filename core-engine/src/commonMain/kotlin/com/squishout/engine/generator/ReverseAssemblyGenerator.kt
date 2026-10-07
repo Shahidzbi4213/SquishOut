@@ -1,6 +1,7 @@
 package com.squishout.engine.generator
 
 import com.squishout.engine.model.Board
+import com.squishout.engine.model.DifficultyTier
 import com.squishout.engine.model.Direction
 import com.squishout.engine.model.Jelly
 import com.squishout.engine.model.JellyType
@@ -12,8 +13,12 @@ import kotlin.random.Random
 
 data class LevelConfig(
     val stageNumber: Int,
+    val gridWidth: Int = 6,
+    val gridHeight: Int = 6,
     val jellyCount: Int = 14,
     val obstacleCount: Int = 1,
+    val maxInitialAwake: Int? = null,
+    val difficultyTier: DifficultyTier = DifficultyTier.NORMAL,
     val includeMultiCell: Boolean = false,
     val includeWaterJets: Boolean = false,
     val includeSchoolingPairs: Boolean = false,
@@ -26,7 +31,8 @@ data class Level(
     val stageNumber: Int,
     val initialBoard: Board,
     val optimalMoves: Int,
-    val targetScore: Int
+    val targetScore: Int,
+    val difficultyTier: DifficultyTier = DifficultyTier.NORMAL
 )
 
 class ReverseAssemblyGenerator {
@@ -34,27 +40,39 @@ class ReverseAssemblyGenerator {
     fun generate(config: LevelConfig): Level {
         val random = if (config.seed != null) Random(config.seed) else Random.Default
         var attempts = 0
-        val maxAttempts = 60
+        val maxAttempts = 120
 
         while (attempts < maxAttempts) {
             attempts++
-            val level = attemptGeneration(config, random)
+            // As attempts increase, relax maxInitialAwake constraint progressively
+            val effectiveMaxAwake = if (config.maxInitialAwake != null && attempts > 25) {
+                config.maxInitialAwake + (attempts - 25) / 5
+            } else {
+                config.maxInitialAwake
+            }
+            val workingConfig = if (effectiveMaxAwake != config.maxInitialAwake) {
+                config.copy(maxInitialAwake = effectiveMaxAwake)
+            } else {
+                config
+            }
+
+            val level = attemptGeneration(workingConfig, random)
             if (level != null && verifySolvable(level.initialBoard)) {
                 return level
             }
         }
 
         // Fallback guaranteed starter level if random search exceeds max attempts
-        return createFallbackLevel(config.stageNumber)
+        return createFallbackLevel(config)
     }
 
     private fun attemptGeneration(config: LevelConfig, random: Random): Level? {
-        val width = 6
-        val height = 6
+        val width = config.gridWidth
+        val height = config.gridHeight
         val obstacles = mutableListOf<Obstacle>()
         val waterJets = mutableListOf<WaterJet>()
 
-        // 1. Place obstacles in interior (1..4, 1..4) to avoid blocking entire perimeter
+        // 1. Place obstacles in interior to avoid blocking entire perimeter
         val interiorPositions = (1 until width - 1).flatMap { x ->
             (1 until height - 1).map { y -> Position(x, y) }
         }.shuffled(random).toMutableList()
@@ -74,14 +92,18 @@ class ReverseAssemblyGenerator {
 
         // 2. Place Water Jets (90° Trajectory Deflectors) if enabled
         if (config.includeWaterJets && interiorPositions.isNotEmpty()) {
-            val jetCount = if (config.stageNumber >= 10) 2 else 1
+            val jetCount = when {
+                config.stageNumber >= 50 -> 3
+                config.stageNumber >= 10 -> 2
+                else -> 1
+            }
             for (i in 0 until jetCount.coerceAtMost(interiorPositions.size)) {
                 val jetPos = interiorPositions.removeAt(0)
                 // Point toward an edge
                 val jetDir = when {
-                    jetPos.x >= 3 -> Direction.EAST
-                    jetPos.x <= 2 -> Direction.WEST
-                    jetPos.y >= 3 -> Direction.SOUTH
+                    jetPos.x >= width / 2 -> Direction.EAST
+                    jetPos.x < width / 2 -> Direction.WEST
+                    jetPos.y >= height / 2 -> Direction.SOUTH
                     else -> Direction.NORTH
                 }
                 waterJets.add(WaterJet(jetPos, jetDir))
@@ -98,9 +120,9 @@ class ReverseAssemblyGenerator {
         var jellyIndex = 0
 
         // 2b. Place 2x2 King Jelly Boss if enabled
-        if (config.includeKingJelly) {
-            val kingTopLeftCandidates = (1..3).flatMap { x ->
-                (1..3).map { y -> Position(x, y) }
+        if (config.includeKingJelly && width >= 5 && height >= 5) {
+            val kingTopLeftCandidates = (1 until width - 2).flatMap { x ->
+                (1 until height - 2).map { y -> Position(x, y) }
             }.shuffled(random)
 
             for (topLeft in kingTopLeftCandidates) {
@@ -135,7 +157,7 @@ class ReverseAssemblyGenerator {
         // 3. Reverse-assembly placement loop
         // We iterate and place jellies that have an open exit ray at the moment of placement
         var consecutiveFailures = 0
-        while (placedJellies.size < config.jellyCount && consecutiveFailures < 100) {
+        while (placedJellies.size < config.jellyCount && consecutiveFailures < 120) {
             val emptyTiles = (0 until width).flatMap { x ->
                 (0 until height).map { y -> Position(x, y) }
             }.filterNot { board.isTileOccupied(it) }.shuffled(random)
@@ -148,7 +170,7 @@ class ReverseAssemblyGenerator {
 
                 for (dir in candidateDirs) {
                     val isMultiCell = config.includeMultiCell &&
-                            (jellyIndex == 3 || jellyIndex == 7) &&
+                            (jellyIndex % 4 == 3) &&
                             pos.step(dir.opposite).isWithinBounds(width, height) &&
                             !board.isTileOccupied(pos.step(dir.opposite))
 
@@ -219,13 +241,18 @@ class ReverseAssemblyGenerator {
         if (config.includeBubbleFog) {
             val fogCandidates = (1 until width - 1).flatMap { x ->
                 (1 until height - 1).map { y -> Position(x, y) }
-            }.shuffled(random).take(3).toSet()
+            }.shuffled(random).take(if (width >= 7) 5 else 3).toSet()
             fogTiles = fogCandidates
             board = board.copy(fogTiles = fogTiles)
         }
 
         val finalizedBoard = board.withUpdatedEyeStates()
         if (finalizedBoard.awakeJellies.isEmpty()) {
+            return null
+        }
+
+        // 6. Enforce initial awake constraint if specified (bottleneck depth)
+        if (config.maxInitialAwake != null && finalizedBoard.awakeJellies.size > config.maxInitialAwake) {
             return null
         }
 
@@ -237,7 +264,8 @@ class ReverseAssemblyGenerator {
             stageNumber = config.stageNumber,
             initialBoard = finalizedBoard,
             optimalMoves = optimalMoves,
-            targetScore = targetScore
+            targetScore = targetScore,
+            difficultyTier = config.difficultyTier
         )
     }
 
@@ -274,21 +302,38 @@ class ReverseAssemblyGenerator {
         return current.isSolved
     }
 
-    private fun createFallbackLevel(stageNumber: Int): Level {
-        val jellies = listOf(
+    private fun createFallbackLevel(config: LevelConfig): Level {
+        val w = config.gridWidth
+        val h = config.gridHeight
+        val jellies = mutableListOf<Jelly>()
+        if (config.includeKingJelly && w >= 5 && h >= 5) {
+            jellies.add(
+                Jelly(
+                    id = "king_boss",
+                    type = JellyType.KING_JELLY,
+                    direction = Direction.NORTH,
+                    tiles = listOf(
+                        Position(w / 2 - 1, 1),
+                        Position(w / 2, 1),
+                        Position(w / 2 - 1, 2),
+                        Position(w / 2, 2)
+                    )
+                )
+            )
+        }
+        jellies.addAll(listOf(
             Jelly("j_0", JellyType.STRAWBERRY, Direction.NORTH, listOf(Position(0, 0))),
-            Jelly("j_1", JellyType.BLUEBERRY, Direction.EAST, listOf(Position(3, 1))),
-            Jelly("j_2", JellyType.LEMON, Direction.WEST, listOf(Position(1, 2))),
-            Jelly("j_3", JellyType.KIWI, Direction.SOUTH, listOf(Position(2, 4))),
-            Jelly("j_4", JellyType.STRAWBERRY, Direction.NORTH, listOf(Position(4, 2))),
-            Jelly("j_5", JellyType.BLUEBERRY, Direction.EAST, listOf(Position(1, 4)))
-        )
-        val board = Board(width = 6, height = 6, jellies = jellies).withUpdatedEyeStates()
+            Jelly("j_1", JellyType.BLUEBERRY, Direction.EAST, listOf(Position(w - 2, 0))),
+            Jelly("j_2", JellyType.LEMON, Direction.WEST, listOf(Position(0, h - 1))),
+            Jelly("j_3", JellyType.KIWI, Direction.SOUTH, listOf(Position(w - 1, h - 1)))
+        ))
+        val board = Board(width = w, height = h, jellies = jellies).withUpdatedEyeStates()
         return Level(
-            stageNumber = stageNumber,
+            stageNumber = config.stageNumber,
             initialBoard = board,
             optimalMoves = jellies.size,
-            targetScore = jellies.size * 100 + 300
+            targetScore = jellies.size * 100 + 300,
+            difficultyTier = config.difficultyTier
         )
     }
 }

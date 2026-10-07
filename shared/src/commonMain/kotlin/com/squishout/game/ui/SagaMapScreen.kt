@@ -78,7 +78,8 @@ data class SagaStage(
     val isUnlocked: Boolean,
     val isCurrent: Boolean,
     val stars: Int,
-    val biome: String? = null
+    val biome: String? = null,
+    val tier: com.squishout.engine.model.DifficultyTier = com.squishout.engine.model.DifficultyTier.forStage(stageNumber)
 )
 
 /**
@@ -98,7 +99,7 @@ fun SagaMapScreen(
     canClaimDaily: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    val totalStages = 80
+    val totalStages = 150
     val recordMap = levelRecords.associateBy { it.levelNumber }
     val currentUnlocked = session.currentStage.coerceAtMost(totalStages)
 
@@ -108,13 +109,16 @@ fun SagaMapScreen(
         val isCurrent = stageNum == currentUnlocked
         val stars = record?.stars ?: 0
         val biome = when (stageNum) {
-            1 -> "SWEET MEADOW • LVL 1–20"
-            21 -> "SODA LAGOON • LVL 21–40"
-            41 -> "HONEYCOMB VALLEY • LVL 41–60"
-            61 -> "COTTON CANDY PEAK • LVL 61–80"
+            1 -> "SWEET MEADOW • LVL 1–25"
+            26 -> "SODA LAGOON • LVL 26–50"
+            51 -> "HONEYCOMB VALLEY • LVL 51–75"
+            76 -> "COTTON CANDY PEAK • LVL 76–100"
+            101 -> "LICORICE LABYRINTH • LVL 101–125"
+            126 -> "STARLIGHT KINGDOM • LVL 126–150"
             else -> null
         }
-        SagaStage(stageNum, isUnlocked, isCurrent, stars, biome)
+        val tier = com.squishout.engine.model.DifficultyTier.forStage(stageNum)
+        SagaStage(stageNum, isUnlocked, isCurrent, stars, biome, tier)
     }.reversed() // Reverse so level 1 starts at bottom and journey scrolls upwards
 
     val listState = rememberLazyListState()
@@ -778,19 +782,64 @@ private fun CompletedStageNode(
     stage: SagaStage,
     onClick: () -> Unit
 ) {
+    val rimColor: Color
+    val faceColors: List<Color>
+    val shadowColor: Color
+    val borderColor: Color
+
+    when (stage.tier) {
+        com.squishout.engine.model.DifficultyTier.SUPER_HARD -> {
+            rimColor = Color(0xFF4C1D95)
+            faceColors = listOf(Color(0xFFC084FC), Color(0xFF8B5CF6), Color(0xFF6D28D9))
+            shadowColor = Color(0xFF3B0764)
+            borderColor = Color(0xFFFFD700)
+        }
+        com.squishout.engine.model.DifficultyTier.HARD -> {
+            rimColor = Color(0xFF7F1D1D)
+            faceColors = listOf(Color(0xFFFCA5A5), Color(0xFFEF4444), Color(0xFFB91C1C))
+            shadowColor = Color(0xFF450A0A)
+            borderColor = Color(0xFFFDE047)
+        }
+        com.squishout.engine.model.DifficultyTier.BREATHER -> {
+            rimColor = Color(0xFF064E3B)
+            faceColors = listOf(Color(0xFFA7F3D0), Color(0xFF10B981), Color(0xFF047857))
+            shadowColor = Color(0xFF064E3B)
+            borderColor = Color(0xFFD1FAE5)
+        }
+        com.squishout.engine.model.DifficultyTier.NORMAL -> {
+            rimColor = Color(0xFF005F73)
+            faceColors = listOf(Color(0xFF90E0EF), Color(0xFF00B4D8), Color(0xFF0077B6))
+            shadowColor = Color(0xFF004052)
+            borderColor = Color(0xFFFFE494)
+        }
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.clickable(onClick = onClick)
     ) {
+        if (stage.tier == com.squishout.engine.model.DifficultyTier.SUPER_HARD) {
+            Text(
+                text = "👑",
+                fontSize = 13.sp,
+                modifier = Modifier.offset(y = 2.dp)
+            )
+        } else if (stage.tier == com.squishout.engine.model.DifficultyTier.HARD) {
+            Text(
+                text = "🔥",
+                fontSize = 13.sp,
+                modifier = Modifier.offset(y = 2.dp)
+            )
+        }
+
         // 3D Candy Button
         Box(
             modifier = Modifier
                 .size(52.dp)
                 .shadow(6.dp, CircleShape)
                 .clip(CircleShape)
-                // 3D bottom bevel rim (#005F73)
-                .background(Color(0xFF005F73))
-                .border(2.5.dp, Color(0xFFFFE494), CircleShape),
+                .background(rimColor)
+                .border(2.5.dp, borderColor, CircleShape),
             contentAlignment = Alignment.TopCenter
         ) {
             // Beveled Dome Face
@@ -800,11 +849,7 @@ private fun CompletedStageNode(
                     .clip(CircleShape)
                     .background(
                         Brush.radialGradient(
-                            colors = listOf(
-                                Color(0xFF90E0EF), // Highlight
-                                Color(0xFF00B4D8), // Mid cyan
-                                Color(0xFF0077B6)  // Depth shade
-                            ),
+                            colors = faceColors,
                             center = Offset(35f, 25f)
                         )
                     ),
@@ -832,7 +877,7 @@ private fun CompletedStageNode(
                     color = Color.White,
                     style = TextStyle(
                         shadow = Shadow(
-                            color = Color(0xFF004052),
+                            color = shadowColor,
                             offset = Offset(0f, 2f),
                             blurRadius = 2f
                         )
@@ -898,6 +943,44 @@ private fun CurrentHeroStageNode(
         )
     )
 
+    val domeRimColor = when (stage.tier) {
+        com.squishout.engine.model.DifficultyTier.SUPER_HARD -> Color(0xFF4C1D95)
+        com.squishout.engine.model.DifficultyTier.HARD -> Color(0xFF7F1D1D)
+        com.squishout.engine.model.DifficultyTier.BREATHER -> Color(0xFF064E3B)
+        else -> Color(0xFFC2410C)
+    }
+    val domeColors = when (stage.tier) {
+        com.squishout.engine.model.DifficultyTier.SUPER_HARD -> listOf(Color(0xFFE9D5FF), Color(0xFFA855F7), Color(0xFF7E22CE))
+        com.squishout.engine.model.DifficultyTier.HARD -> listOf(Color(0xFFFED7AA), Color(0xFFF97316), Color(0xFFDC2626))
+        com.squishout.engine.model.DifficultyTier.BREATHER -> listOf(Color(0xFFA7F3D0), Color(0xFF10B981), Color(0xFF047857))
+        else -> listOf(Color(0xFFFFF3B0), Color(0xFFFFB703), Color(0xFFFB8500))
+    }
+    val domeNumberColor = when (stage.tier) {
+        com.squishout.engine.model.DifficultyTier.SUPER_HARD,
+        com.squishout.engine.model.DifficultyTier.HARD,
+        com.squishout.engine.model.DifficultyTier.BREATHER -> Color.White
+        else -> Color(0xFF422006)
+    }
+
+    val bannerText = when (stage.tier) {
+        com.squishout.engine.model.DifficultyTier.SUPER_HARD -> "👑 BOSS! ▶"
+        com.squishout.engine.model.DifficultyTier.HARD -> "🔥 HARD! ▶"
+        com.squishout.engine.model.DifficultyTier.BREATHER -> "✨ FLOW! ▶"
+        else -> "PLAY! ▶"
+    }
+    val bannerColors = when (stage.tier) {
+        com.squishout.engine.model.DifficultyTier.SUPER_HARD -> listOf(Color(0xFFC084FC), Color(0xFF9333EA), Color(0xFF6B21A8))
+        com.squishout.engine.model.DifficultyTier.HARD -> listOf(Color(0xFFF87171), Color(0xFFDC2626), Color(0xFF991B1B))
+        com.squishout.engine.model.DifficultyTier.BREATHER -> listOf(Color(0xFF34D399), Color(0xFF059669), Color(0xFF047857))
+        else -> listOf(Color(0xFFFF5D8F), Color(0xFFE63946), Color(0xFFA80038))
+    }
+    val bannerRimColor = when (stage.tier) {
+        com.squishout.engine.model.DifficultyTier.SUPER_HARD -> Color(0xFF3B0764)
+        com.squishout.engine.model.DifficultyTier.HARD -> Color(0xFF450A0A)
+        com.squishout.engine.model.DifficultyTier.BREATHER -> Color(0xFF064E3B)
+        else -> Color(0xFF670020)
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.clickable(onClick = onClick)
@@ -956,14 +1039,13 @@ private fun CurrentHeroStageNode(
                     }
                 }
 
-                // Plump Golden Honey-Amber 3D Dome Button
+                // Plump 3D Dome Button
                 Box(
                     modifier = Modifier
                         .size(62.dp)
                         .shadow(8.dp, CircleShape)
                         .clip(CircleShape)
-                        // 3D bottom bevel rim (#C2410C)
-                        .background(Color(0xFFC2410C))
+                        .background(domeRimColor)
                         .border(3.dp, Color(0xFFFFE494), CircleShape),
                     contentAlignment = Alignment.TopCenter
                 ) {
@@ -973,11 +1055,7 @@ private fun CurrentHeroStageNode(
                             .clip(CircleShape)
                             .background(
                                 Brush.radialGradient(
-                                    colors = listOf(
-                                        Color(0xFFFFF3B0),
-                                        Color(0xFFFFB703),
-                                        Color(0xFFFB8500)
-                                    ),
+                                    colors = domeColors,
                                     center = Offset(35f, 25f)
                                 )
                             ),
@@ -1002,10 +1080,10 @@ private fun CurrentHeroStageNode(
                             text = "${stage.stageNumber}",
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Black,
-                            color = Color(0xFF422006),
+                            color = domeNumberColor,
                             style = TextStyle(
                                 shadow = Shadow(
-                                    color = Color.White.copy(alpha = 0.7f),
+                                    color = if (domeNumberColor == Color.White) Color.Black.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.7f),
                                     offset = Offset(0f, 2f),
                                     blurRadius = 0f
                                 )
@@ -1016,41 +1094,34 @@ private fun CurrentHeroStageNode(
             }
         }
 
-        // Extruded Juicy 3D "PLAY! ▶" Red Candy Action Pill Banner
+        // Extruded Juicy 3D Action Pill Banner
         Box(
             modifier = Modifier
                 .offset(y = (-4).dp)
                 .shadow(4.dp, RoundedCornerShape(16.dp))
                 .clip(RoundedCornerShape(16.dp))
-                // 3D bevel rim (#670020)
-                .background(Color(0xFF670020))
+                .background(bannerRimColor)
                 .padding(bottom = 2.5.dp)
         ) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 14.dp, bottomEnd = 14.dp))
                     .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                Color(0xFFFF5D8F),
-                                Color(0xFFE63946),
-                                Color(0xFFA80038)
-                            )
-                        )
+                        Brush.verticalGradient(bannerColors)
                     )
                     .border(1.5.dp, Color(0xFFFFCCD5), RoundedCornerShape(16.dp))
                     .padding(horizontal = 14.dp, vertical = 5.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "PLAY! ▶",
+                    text = bannerText,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.White,
                     letterSpacing = 0.5.sp,
                     style = TextStyle(
                         shadow = Shadow(
-                            color = Color(0xFF670020),
+                            color = bannerRimColor,
                             offset = Offset(0f, 1.5f),
                             blurRadius = 2f
                         )
@@ -1066,9 +1137,34 @@ private fun CurrentHeroStageNode(
  */
 @Composable
 private fun LockedStageNode(stage: SagaStage) {
+    val lockRimColor = when (stage.tier) {
+        com.squishout.engine.model.DifficultyTier.SUPER_HARD -> Color(0xFF4C1D95)
+        com.squishout.engine.model.DifficultyTier.HARD -> Color(0xFF7F1D1D)
+        else -> Color(0xFF5E5247)
+    }
+    val lockBorderColor = when (stage.tier) {
+        com.squishout.engine.model.DifficultyTier.SUPER_HARD -> Color(0xFFFFD700)
+        com.squishout.engine.model.DifficultyTier.HARD -> Color(0xFFFDE047)
+        else -> Color(0xFFFFE494)
+    }
+
     Box(
         contentAlignment = Alignment.TopCenter
     ) {
+        if (stage.tier == com.squishout.engine.model.DifficultyTier.SUPER_HARD) {
+            Text(
+                text = "👑",
+                fontSize = 13.sp,
+                modifier = Modifier.offset(y = (-6).dp)
+            )
+        } else if (stage.tier == com.squishout.engine.model.DifficultyTier.HARD) {
+            Text(
+                text = "🔥",
+                fontSize = 13.sp,
+                modifier = Modifier.offset(y = (-6).dp)
+            )
+        }
+
         // Main Stone / Chocolate Bevel Disc
         Box(
             modifier = Modifier
@@ -1076,9 +1172,8 @@ private fun LockedStageNode(stage: SagaStage) {
                 .size(50.dp)
                 .shadow(4.dp, CircleShape)
                 .clip(CircleShape)
-                // 3D bottom bevel rim (#5E5247)
-                .background(Color(0xFF5E5247))
-                .border(2.5.dp, Color(0xFFFFE494), CircleShape),
+                .background(lockRimColor)
+                .border(2.5.dp, lockBorderColor, CircleShape),
             contentAlignment = Alignment.TopCenter
         ) {
             Box(

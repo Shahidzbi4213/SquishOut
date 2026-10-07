@@ -165,7 +165,8 @@ class GameRepository(
         stars: Int,
         score: Int,
         movesUsed: Int,
-        timestampEpoch: Long
+        timestampEpoch: Long,
+        difficultyTier: com.squishout.engine.model.DifficultyTier = com.squishout.engine.model.DifficultyTier.NORMAL
     ) {
         val existing = levelDao.getRecord(levelNumber).firstOrNull()
         val bestStars = if (existing != null) maxOf(existing.stars, stars) else stars
@@ -182,9 +183,19 @@ class GameRepository(
             )
         )
 
-        // Award candies: 25 base + 15 per star
-        val candiesAwarded = 25 + (stars * 15)
+        // Award candies: 25 base + 15 per star, boosted by difficulty tier
+        val baseCandies = 25 + (stars * 15)
+        val candiesAwarded = when (difficultyTier) {
+            com.squishout.engine.model.DifficultyTier.SUPER_HARD -> baseCandies * 2
+            com.squishout.engine.model.DifficultyTier.HARD -> (baseCandies * 1.5).toInt()
+            else -> baseCandies
+        }
         sessionDao.addCandies(candiesAwarded)
+
+        // Super Hard boss victory bonus: 5 gems!
+        if (difficultyTier == com.squishout.engine.model.DifficultyTier.SUPER_HARD) {
+            sessionDao.addGems(5)
+        }
 
         // Advance unlocked stage if current level completed
         val currentSession = sessionDao.getSession().firstOrNull()

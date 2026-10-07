@@ -130,8 +130,7 @@ data class Board(
     fun canJellyEscape(jelly: Jelly): Boolean {
         val partnerId = jelly.linkedJellyId
         if (partnerId != null) {
-            val partner = getJellyById(partnerId)
-            if (partner == null) return false
+            val partner = getJellyById(partnerId) ?: return false
             return canSingleJellyEscape(jelly, setOf(partnerId)) &&
                    canSingleJellyEscape(partner, setOf(jelly.id))
         }

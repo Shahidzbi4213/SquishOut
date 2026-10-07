@@ -26,16 +26,18 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.squishout.engine.model.DifficultyTier
 import com.squishout.game.theme.BiomeTheme
 
 /**
- * Carved golden-wood plaque with brass rivets and an inset emerald/cyan jewel capsule
- * displaying the current stage number, matching the Stitch arcade visual style.
+ * Carved golden-wood plaque with brass rivets and an inset gem capsule
+ * displaying the current stage number and dynamic difficulty styling, matching the Stitch arcade visual style.
  */
 @Composable
 fun StageHeaderPlaque(
     stage: Int,
     biome: BiomeTheme = BiomeTheme.SWEET_MEADOW,
+    difficultyTier: DifficultyTier = DifficultyTier.NORMAL,
     modifier: Modifier = Modifier
 ) {
     val plaqueShape = RoundedCornerShape(22.dp)
@@ -77,8 +79,12 @@ fun StageHeaderPlaque(
                 // Left Brass Rivet
                 BrassRivet()
 
-                // Inset Emerald Jewel Capsule
-                InsetJewelCapsule(stage = stage, icon = biome.icon)
+                // Inset Dynamic Jewel Capsule
+                InsetJewelCapsule(
+                    stage = stage,
+                    icon = biome.icon,
+                    difficultyTier = difficultyTier
+                )
 
                 // Right Brass Rivet
                 BrassRivet()
@@ -88,8 +94,54 @@ fun StageHeaderPlaque(
 }
 
 @Composable
-private fun InsetJewelCapsule(stage: Int, icon: String) {
+private fun InsetJewelCapsule(
+    stage: Int,
+    icon: String,
+    difficultyTier: DifficultyTier = DifficultyTier.NORMAL
+) {
     val capsuleShape = RoundedCornerShape(16.dp)
+
+    val rimColor: Color
+    val gemColors: List<Color>
+    val textShadowColor: Color
+    val displayText: String
+    val displayIcon: String
+    val dotColor: Color
+
+    when (difficultyTier) {
+        DifficultyTier.SUPER_HARD -> {
+            rimColor = Color(0xFF3B0764)
+            gemColors = listOf(Color(0xFFA855F7), Color(0xFF7E22CE), Color(0xFF581C87))
+            textShadowColor = Color(0x992E1065)
+            displayText = "Boss $stage"
+            displayIcon = "👑"
+            dotColor = Color(0xFFFFD700)
+        }
+        DifficultyTier.HARD -> {
+            rimColor = Color(0xFF450A0A)
+            gemColors = listOf(Color(0xFFF87171), Color(0xFFDC2626), Color(0xFF991B1B))
+            textShadowColor = Color(0x99450A0A)
+            displayText = "Hard $stage"
+            displayIcon = "🔥"
+            dotColor = Color(0xFFFEF08A)
+        }
+        DifficultyTier.BREATHER -> {
+            rimColor = Color(0xFF064E3B)
+            gemColors = listOf(Color(0xFF34D399), Color(0xFF059669), Color(0xFF047857))
+            textShadowColor = Color(0x77064E3B)
+            displayText = "Stage $stage"
+            displayIcon = "✨"
+            dotColor = Color(0xFFA7F3D0)
+        }
+        DifficultyTier.NORMAL -> {
+            rimColor = Color(0xFF00382B)
+            gemColors = listOf(Color(0xFF00BFA5), Color(0xFF00897B), Color(0xFF004D40))
+            textShadowColor = Color(0x77002D24)
+            displayText = "Stage $stage"
+            displayIcon = icon
+            dotColor = Color(0xFFFFE082)
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -98,7 +150,7 @@ private fun InsetJewelCapsule(stage: Int, icon: String) {
             .shadow(2.dp, capsuleShape)
             .clip(capsuleShape)
             // Bevel rim for inset effect
-            .background(Color(0xFF00382B))
+            .background(rimColor)
             .padding(bottom = 1.5.dp)
     ) {
         // Face of the gem
@@ -108,11 +160,7 @@ private fun InsetJewelCapsule(stage: Int, icon: String) {
                 .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 14.dp, bottomEnd = 14.dp))
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF00BFA5), // Teal/emerald bright gem
-                            Color(0xFF00897B), // Deep teal
-                            Color(0xFF004D40)  // Inset shade
-                        )
+                        colors = gemColors
                     )
                 )
                 .border(
@@ -145,17 +193,17 @@ private fun InsetJewelCapsule(stage: Int, icon: String) {
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
-                    text = icon,
+                    text = displayIcon,
                     fontSize = 15.sp
                 )
                 Text(
-                    text = "Stage $stage",
+                    text = displayText,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,
                     style = TextStyle(
                         shadow = Shadow(
-                            color = Color(0x77002D24),
+                            color = textShadowColor,
                             offset = Offset(0f, 2f),
                             blurRadius = 3f
                         )
@@ -166,7 +214,7 @@ private fun InsetJewelCapsule(stage: Int, icon: String) {
                     modifier = Modifier
                         .size(6.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFFFE082))
+                        .background(dotColor)
                 )
             }
         }
@@ -179,25 +227,24 @@ private fun BrassRivet() {
         val radius = size.minDimension / 2f
         val center = Offset(size.width / 2f, size.height / 2f)
 
-        // Outer bronze shadow rim
+        // Outer dark brass ring
         drawCircle(
-            color = Color(0xFF6D3804),
+            color = Color(0xFF6D3800),
             radius = radius,
             center = center
         )
-
-        // Inner golden dome
+        // Raised polished brass dome
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    Color(0xFFFFFDE7),
-                    Color(0xFFFFD54F),
-                    Color(0xFFD97706)
+                    Color(0xFFFFEE99),
+                    Color(0xFFE5A823),
+                    Color(0xFF8A5200)
                 ),
                 center = Offset(center.x - radius * 0.25f, center.y - radius * 0.25f),
                 radius = radius * 0.9f
             ),
-            radius = radius * 0.82f,
+            radius = radius * 0.85f,
             center = center
         )
     }

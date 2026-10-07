@@ -42,6 +42,7 @@ fun GameScreen(
 ) {
     val gameState by viewModel.gameState.collectAsState()
     val session by viewModel.sessionState.collectAsState()
+    val difficultyTier by viewModel.currentDifficultyTier.collectAsState()
     val biome = BiomeTheme.forStage(gameState.stageNumber)
 
     var isSettingsOpen by remember { mutableStateOf(false) }
@@ -70,6 +71,7 @@ fun GameScreen(
                     stage = gameState.stageNumber,
                     hearts = gameState.hearts,
                     biome = biome,
+                    difficultyTier = difficultyTier,
                     onBack = onBackToMap,
                     onSettings = { isSettingsOpen = true }
                 )
@@ -186,6 +188,7 @@ private fun GameHeader(
     stage: Int,
     hearts: Int,
     biome: BiomeTheme = BiomeTheme.SWEET_MEADOW,
+    difficultyTier: com.squishout.engine.model.DifficultyTier = com.squishout.engine.model.DifficultyTier.NORMAL,
     onBack: () -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier
@@ -203,7 +206,8 @@ private fun GameHeader(
         ) {
             StageHeaderPlaque(
                 stage = stage,
-                biome = biome
+                biome = biome,
+                difficultyTier = difficultyTier
             )
             CandyHeartsView(
                 hearts = hearts,
