@@ -108,6 +108,11 @@ class FakeUserSessionDao : UserSessionDao {
         session.value = cur.copy(soundEnabled = enabled)
     }
 
+    override suspend fun updateMusicEnabled(enabled: Boolean) {
+        val cur = session.value ?: UserSessionEntity()
+        session.value = cur.copy(musicEnabled = enabled)
+    }
+
     override suspend fun updateHapticsEnabled(enabled: Boolean) {
         val cur = session.value ?: UserSessionEntity()
         session.value = cur.copy(hapticsEnabled = enabled)
@@ -280,5 +285,19 @@ class GameRepositoryTest {
         assertNotNull(reward2)
         assertEquals(2, reward2.day)
         assertEquals(2, repository.session.value.loginStreakDays)
+    }
+
+    @Test
+    fun testToggleMusic() = runTest(testDispatcher) {
+        testScheduler.advanceUntilIdle()
+        assertTrue(repository.session.value.musicEnabled)
+
+        repository.toggleMusic(false)
+        testScheduler.advanceUntilIdle()
+        assertFalse(repository.session.value.musicEnabled)
+
+        repository.toggleMusic(true)
+        testScheduler.advanceUntilIdle()
+        assertTrue(repository.session.value.musicEnabled)
     }
 }

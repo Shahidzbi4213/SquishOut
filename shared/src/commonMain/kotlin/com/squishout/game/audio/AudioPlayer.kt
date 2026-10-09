@@ -20,6 +20,10 @@ expect class AudioPlayer {
     fun playSound(sound: SoundEffect)
     fun triggerHaptic(type: HapticFeedbackType)
     fun triggerHaptic(isError: Boolean = false)
+    fun startMusic()
+    fun stopMusic()
+    fun setMusicEnabled(enabled: Boolean)
+    fun setSoundEnabled(enabled: Boolean)
     fun release()
 }
 

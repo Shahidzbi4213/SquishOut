@@ -265,6 +265,10 @@ class GameRepository(
         sessionDao.updateSoundEnabled(enabled)
     }
 
+    suspend fun toggleMusic(enabled: Boolean) {
+        sessionDao.updateMusicEnabled(enabled)
+    }
+
     suspend fun toggleHaptics(enabled: Boolean) {
         sessionDao.updateHapticsEnabled(enabled)
     }

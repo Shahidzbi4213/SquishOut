@@ -11,8 +11,11 @@ actual class AudioPlayer {
     private val impactLight = UIImpactFeedbackGenerator(style = UIImpactFeedbackStyle.UIImpactFeedbackStyleLight)
     private val impactHeavy = UIImpactFeedbackGenerator(style = UIImpactFeedbackStyle.UIImpactFeedbackStyleHeavy)
     private val notificationFeedback = UINotificationFeedbackGenerator()
+    private var isMusicEnabled = true
+    private var isSoundEnabled = true
 
     actual fun playSound(sound: SoundEffect) {
+        if (!isSoundEnabled) return
         val soundId = when (sound) {
             SoundEffect.POP -> 1104u // Standard Apple pop sound
             SoundEffect.WOBBLE -> 1053u // Low tick
@@ -45,7 +48,24 @@ actual class AudioPlayer {
         triggerHaptic(if (isError) HapticFeedbackType.ERROR_WOBBLE else HapticFeedbackType.LIGHT_CLICK)
     }
 
+    actual fun startMusic() {
+        // iOS background loop handler
+    }
+
+    actual fun stopMusic() {
+        // iOS background loop handler
+    }
+
+    actual fun setMusicEnabled(enabled: Boolean) {
+        isMusicEnabled = enabled
+        if (enabled) startMusic() else stopMusic()
+    }
+
+    actual fun setSoundEnabled(enabled: Boolean) {
+        isSoundEnabled = enabled
+    }
+
     actual fun release() {
-        // No-op on iOS
+        stopMusic()
     }
 }

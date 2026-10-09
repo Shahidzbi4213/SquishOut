@@ -20,6 +20,9 @@ actual class AudioPlayer(private val context: Context) {
     }
 
     private val tracks = mutableMapOf<SoundEffect, AudioTrack>()
+    private var musicTrack: AudioTrack? = null
+    private var isMusicEnabled = true
+    private var isSoundEnabled = true
 
     init {
         try {
@@ -29,6 +32,11 @@ actual class AudioPlayer(private val context: Context) {
             tracks[SoundEffect.BOOSTER] = createTrack(generateBooster())
             tracks[SoundEffect.CRACK] = createTrack(generateCrack())
             tracks[SoundEffect.COMBO] = createTrack(generateCombo())
+
+            val musicData = generateCozyMeadowMusic()
+            musicTrack = createTrack(musicData).apply {
+                setLoopPoints(0, musicData.size, -1)
+            }
         } catch (_: Throwable) {
             // AudioTrack creation fallback
         }
@@ -189,7 +197,56 @@ actual class AudioPlayer(private val context: Context) {
         return buffer
     }
 
+    private fun generateCozyMeadowMusic(): ShortArray {
+        val sampleRate = 44100
+        val tempoBpm = 96.0
+        val beatDuration = 60.0 / tempoBpm // ~0.625s
+        val totalBeats = 16 // 4 bars of 4/4
+        val totalSec = totalBeats * beatDuration // ~10.0 sec
+        val totalSamples = (sampleRate * totalSec).toInt()
+        val buffer = ShortArray(totalSamples)
+
+        // Cozy pentatonic melody notes: (beat index, freq in Hz)
+        val melodyNotes = listOf(
+            0.0 to 261.63,  // C4
+            1.0 to 329.63,  // E4
+            2.0 to 392.00,  // G4
+            3.0 to 440.00,  // A4
+            4.0 to 523.25,  // C5
+            5.5 to 440.00,  // A4
+            6.0 to 392.00,  // G4
+            7.0 to 329.63,  // E4
+            8.0 to 293.66,  // D4
+            9.0 to 329.63,  // E4
+            10.0 to 392.00, // G4
+            11.5 to 523.25, // C5
+            12.0 to 440.00, // A4
+            13.0 to 392.00, // G4
+            14.0 to 329.63, // E4
+            15.0 to 261.63  // C4
+        )
+
+        // Gentle marimba / kalimba bell synthesis with soft exponential decay
+        for ((startBeat, freq) in melodyNotes) {
+            val startSample = (startBeat * beatDuration * sampleRate).toInt()
+            val noteDurationSamples = (beatDuration * 1.8 * sampleRate).toInt()
+            for (s in 0 until noteDurationSamples) {
+                val idx = startSample + s
+                if (idx >= totalSamples) break
+                val t = s.toDouble() / sampleRate
+                val fundamental = kotlin.math.sin(2.0 * kotlin.math.PI * freq * t)
+                val harmonic = 0.28 * kotlin.math.sin(4.0 * kotlin.math.PI * freq * t)
+                val decay = kotlin.math.exp(-t * 3.6)
+                val sampleValue = (fundamental + harmonic) * decay * 4800.0 // Cozy background volume
+                val current = buffer[idx].toInt()
+                buffer[idx] = (current + sampleValue.toInt()).coerceIn(-32767, 32767).toShort()
+            }
+        }
+        return buffer
+    }
+
     actual fun playSound(sound: SoundEffect) {
+        if (!isSoundEnabled) return
         try {
             val track = tracks[sound] ?: return
             track.stop()
@@ -198,6 +255,40 @@ actual class AudioPlayer(private val context: Context) {
         } catch (_: Throwable) {
             // Safe fallback if audio device is unavailable
         }
+    }
+
+    actual fun startMusic() {
+        if (!isMusicEnabled) return
+        try {
+            musicTrack?.let {
+                if (it.playState != AudioTrack.PLAYSTATE_PLAYING) {
+                    it.play()
+                }
+            }
+        } catch (_: Throwable) {}
+    }
+
+    actual fun stopMusic() {
+        try {
+            musicTrack?.let {
+                if (it.playState == AudioTrack.PLAYSTATE_PLAYING) {
+                    it.pause()
+                }
+            }
+        } catch (_: Throwable) {}
+    }
+
+    actual fun setMusicEnabled(enabled: Boolean) {
+        isMusicEnabled = enabled
+        if (enabled) {
+            startMusic()
+        } else {
+            stopMusic()
+        }
+    }
+
+    actual fun setSoundEnabled(enabled: Boolean) {
+        isSoundEnabled = enabled
     }
 
     actual fun triggerHaptic(type: HapticFeedbackType) {
@@ -243,6 +334,11 @@ actual class AudioPlayer(private val context: Context) {
     }
 
     actual fun release() {
+        try {
+            musicTrack?.stop()
+            musicTrack?.release()
+            musicTrack = null
+        } catch (_: Throwable) {}
         tracks.values.forEach { track ->
             try {
                 track.stop()

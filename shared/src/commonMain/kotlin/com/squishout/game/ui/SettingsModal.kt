@@ -48,6 +48,7 @@ import com.squishout.game.ui.components.ModalExtrudedButton
 import com.squishout.game.ui.components.ModalMapIcon
 import com.squishout.game.ui.components.ModalPlayIcon
 import com.squishout.game.ui.components.ModalRestartIcon
+import com.squishout.game.ui.components.MusicNoteIcon
 import com.squishout.game.ui.components.SoundSpeakerIcon
 import com.squishout.game.ui.components.VibrateWaveIcon
 
@@ -65,8 +66,10 @@ import com.squishout.game.ui.components.VibrateWaveIcon
 fun SettingsModal(
     isVisible: Boolean,
     soundEnabled: Boolean,
+    musicEnabled: Boolean = true,
     hapticsEnabled: Boolean,
     onToggleSound: (Boolean) -> Unit,
+    onToggleMusic: (Boolean) -> Unit = {},
     onToggleHaptics: (Boolean) -> Unit,
     onResume: () -> Unit,
     onRestart: () -> Unit,
@@ -175,6 +178,15 @@ fun SettingsModal(
                                 icon = { SoundSpeakerIcon(color = Color(0xFF6D4321)) },
                                 checked = soundEnabled,
                                 onCheckedChange = onToggleSound
+                            )
+
+                            // Background Music Toggle Row
+                            ArcadeSettingRow(
+                                title = "Background Music",
+                                subtitle = "Cozy candy meadow melodies",
+                                icon = { MusicNoteIcon(color = Color(0xFF6D4321)) },
+                                checked = musicEnabled,
+                                onCheckedChange = onToggleMusic
                             )
 
                             // Haptics Toggle Row
