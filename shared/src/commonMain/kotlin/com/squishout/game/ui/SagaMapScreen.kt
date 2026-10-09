@@ -103,6 +103,7 @@ fun SagaMapScreen(
     onOpenDailyReward: () -> Unit = {},
     canClaimDaily: Boolean = false,
     onClaimStarChest: (StarChestMilestone) -> Unit = {},
+    onNavigateToCalendar: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val totalStages = 150
@@ -301,7 +302,21 @@ fun SagaMapScreen(
             )
         }
 
-        // 4. Star Chest Milestone Loot Claim Modal
+        // 4. Floating Daily Challenge Calendar Badge
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(end = 16.dp, bottom = 86.dp)
+                .zIndex(4f)
+        ) {
+            DailyCalendarFloatingBadge(
+                streakDays = session.dailyPuzzleStreak,
+                onClick = onNavigateToCalendar
+            )
+        }
+
+        // 5. Star Chest Milestone Loot Claim Modal
         StarChestModal(
             milestone = activeStarChestMilestone,
             totalStars = totalStars,
@@ -313,6 +328,92 @@ fun SagaMapScreen(
             },
             onDismiss = { activeStarChestMilestone = null }
         )
+    }
+}
+
+@Composable
+private fun DailyCalendarFloatingBadge(
+    streakDays: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition()
+    val floatY by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = -5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    Column(
+        modifier = modifier
+            .offset(y = floatY.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            ),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(54.dp)
+                .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = Color(0xFFC2410C).copy(alpha = 0.5f))
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color(0xFF9A3412))
+                .padding(bottom = 3.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color(0xFFFFFBEB),
+                                Color(0xFFFEF3C7),
+                                Color(0xFFFDE68A)
+                            )
+                        )
+                    )
+                    .border(1.5.dp, Color(0xFFFCD34D), RoundedCornerShape(14.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(text = "📅", fontSize = 18.sp)
+                    Text(
+                        text = "DAILY",
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF92400E),
+                        letterSpacing = 0.5.sp
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        // Mini Streak Pill
+        Box(
+            modifier = Modifier
+                .shadow(2.dp, RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color(0xFFEA580C))
+                .padding(horizontal = 6.dp, vertical = 1.dp)
+        ) {
+            Text(
+                text = "🔥 $streakDays",
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.White
+            )
+        }
     }
 }
 

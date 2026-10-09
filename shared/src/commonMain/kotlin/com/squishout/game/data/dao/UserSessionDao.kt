@@ -38,4 +38,10 @@ interface UserSessionDao {
 
     @Query("UPDATE user_session SET claimedStarChests = :claimed WHERE id = 1")
     suspend fun updateClaimedStarChests(claimed: String)
+
+    @Query("UPDATE user_session SET dailyPuzzleStreak = :streak, lastDailyPuzzleEpochDay = :epochDay WHERE id = 1")
+    suspend fun updateDailyPuzzleStreak(streak: Int, epochDay: Long)
+
+    @Query("UPDATE user_session SET claimedMonthlyMilestones = :claimed WHERE id = 1")
+    suspend fun updateClaimedMonthlyMilestones(claimed: String)
 }

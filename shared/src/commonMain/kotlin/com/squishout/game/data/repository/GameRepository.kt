@@ -1,8 +1,10 @@
 package com.squishout.game.data.repository
 
+import com.squishout.game.data.dao.DailyPuzzleDao
 import com.squishout.game.data.dao.JellySkinDao
 import com.squishout.game.data.dao.LevelDao
 import com.squishout.game.data.dao.UserSessionDao
+import com.squishout.game.data.entity.DailyPuzzleRecordEntity
 import com.squishout.game.data.entity.JellySkinEntity
 import com.squishout.game.data.entity.LevelRecordEntity
 import com.squishout.game.data.entity.UserSessionEntity
@@ -22,6 +24,7 @@ class GameRepository(
     private val levelDao: LevelDao,
     private val skinDao: JellySkinDao,
     private val sessionDao: UserSessionDao,
+    private val dailyPuzzleDao: DailyPuzzleDao,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 ) {
     companion object {
@@ -112,6 +115,15 @@ class GameRepository(
                 level = 1,
                 isEquipped = false,
                 perkDescription = "Crown shimmer & rainbow launch trails"
+            ),
+            JellySkinEntity(
+                jellyId = "cosmic_nebula",
+                name = "Cosmic Nebula",
+                rarity = "LEGENDARY",
+                isUnlocked = false,
+                level = 1,
+                isEquipped = false,
+                perkDescription = "Daily puzzle mastery: Stardust aura & cosmic glow"
             )
         )
         skinDao.insertDefaults(starterSkins)
@@ -323,6 +335,103 @@ class GameRepository(
         )
         return true
     }
+
+    fun getDailyRecordsForMonth(monthKey: String): Flow<List<DailyPuzzleRecordEntity>> =
+        dailyPuzzleDao.getRecordsForMonth(monthKey)
+
+    fun getDailyRecordForDay(epochDay: Long): Flow<DailyPuzzleRecordEntity?> =
+        dailyPuzzleDao.getRecordForDay(epochDay)
+
+    suspend fun recordDailyPuzzleCompletion(
+        epochDay: Long,
+        dateString: String,
+        dayOfMonth: Int,
+        monthKey: String,
+        stars: Int,
+        movesUsed: Int,
+        score: Int,
+        currentEpochMs: Long = 0L
+    ): Boolean {
+        val now = if (currentEpochMs > 0L) currentEpochMs else com.squishout.game.util.currentTimeMillis()
+        val record = DailyPuzzleRecordEntity(
+            epochDay = epochDay,
+            dateString = dateString,
+            dayOfMonth = dayOfMonth,
+            monthKey = monthKey,
+            stars = stars,
+            movesUsed = movesUsed,
+            score = score,
+            completedAt = now
+        )
+        dailyPuzzleDao.insertOrUpdate(record)
+
+        val currentSession = sessionDao.getSession().firstOrNull() ?: return true
+        val lastDay = currentSession.lastDailyPuzzleEpochDay
+        val newStreak = when {
+            lastDay == epochDay -> currentSession.dailyPuzzleStreak // already completed today
+            lastDay == epochDay - 1 -> currentSession.dailyPuzzleStreak + 1 // consecutive day
+            else -> 1 // reset streak to 1
+        }
+
+        // Daily rewards: 100 candies, 10 gems
+        val updatedSession = currentSession.copy(
+            candies = currentSession.candies + 100,
+            gems = currentSession.gems + 10,
+            dailyPuzzleStreak = newStreak,
+            lastDailyPuzzleEpochDay = epochDay
+        )
+        sessionDao.insertOrUpdate(updatedSession)
+        return true
+    }
+
+    suspend fun claimMonthlyMilestone(
+        monthKey: String,
+        milestoneDays: Int,
+        monthlyCompletionCount: Int
+    ): Boolean {
+        if (monthlyCompletionCount < milestoneDays) return false
+        val currentSession = sessionDao.getSession().firstOrNull() ?: return false
+        val claimedSet = currentSession.claimedMonthlyMilestones.split(",").filter { it.isNotBlank() }.toMutableSet()
+        val key = "$monthKey:$milestoneDays"
+        if (claimedSet.contains(key)) return false
+
+        claimedSet.add(key)
+        var addedCandies = 0
+        var addedGems = 0
+
+        when (milestoneDays) {
+            5 -> addedCandies = 150
+            10 -> {
+                addedCandies = 200
+                addedGems = 25
+            }
+            20 -> {
+                addedCandies = 300
+                addedGems = 50
+                // Unlock Cosmic Nebula skin
+                skinDao.insertOrUpdate(
+                    JellySkinEntity(
+                        jellyId = "cosmic_nebula",
+                        name = "Cosmic Nebula",
+                        rarity = "LEGENDARY",
+                        isUnlocked = true,
+                        level = 1,
+                        isEquipped = false,
+                        perkDescription = "Daily puzzle mastery: Stardust aura & cosmic glow"
+                    )
+                )
+            }
+        }
+
+        sessionDao.insertOrUpdate(
+            currentSession.copy(
+                candies = currentSession.candies + addedCandies,
+                gems = currentSession.gems + addedGems,
+                claimedMonthlyMilestones = claimedSet.joinToString(",")
+            )
+        )
+        return true
+    }
 }
 
 data class StarChestMilestone(
@@ -362,3 +471,19 @@ val DAILY_REWARDS_SCHEDULE = listOf(
     DailyReward(day = 6, rewardTitle = "15 Gems", icon = "💎", gems = 15),
     DailyReward(day = 7, rewardTitle = "Mega Box", icon = "🎁", candies = 250, gems = 25)
 )
+
+data class MonthlyMilestone(
+    val requiredDays: Int,
+    val rewardTitle: String,
+    val iconEmoji: String,
+    val candies: Int = 0,
+    val gems: Int = 0,
+    val skinRewardId: String? = null
+)
+
+val MONTHLY_MILESTONES = listOf(
+    MonthlyMilestone(requiredDays = 5, rewardTitle = "150 Candies", iconEmoji = "🍬", candies = 150),
+    MonthlyMilestone(requiredDays = 10, rewardTitle = "200 Candies + 25 Gems", iconEmoji = "💎", candies = 200, gems = 25),
+    MonthlyMilestone(requiredDays = 20, rewardTitle = "Cosmic Nebula Skin", iconEmoji = "🌌", candies = 300, gems = 50, skinRewardId = "cosmic_nebula")
+)
+

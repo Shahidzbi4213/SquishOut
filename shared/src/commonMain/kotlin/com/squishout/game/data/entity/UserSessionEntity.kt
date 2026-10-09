@@ -17,5 +17,8 @@ data class UserSessionEntity(
     val hapticsEnabled: Boolean = true,
     val loginStreakDays: Int = 1,
     val lastClaimEpochDay: Long = 0L,
-    val claimedStarChests: String = ""
+    val claimedStarChests: String = "",
+    val dailyPuzzleStreak: Int = 0,
+    val lastDailyPuzzleEpochDay: Long = 0L,
+    val claimedMonthlyMilestones: String = ""
 )

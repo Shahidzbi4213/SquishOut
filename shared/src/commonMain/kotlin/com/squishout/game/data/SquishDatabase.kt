@@ -4,9 +4,11 @@ import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
+import com.squishout.game.data.dao.DailyPuzzleDao
 import com.squishout.game.data.dao.JellySkinDao
 import com.squishout.game.data.dao.LevelDao
 import com.squishout.game.data.dao.UserSessionDao
+import com.squishout.game.data.entity.DailyPuzzleRecordEntity
 import com.squishout.game.data.entity.JellySkinEntity
 import com.squishout.game.data.entity.LevelRecordEntity
 import com.squishout.game.data.entity.UserSessionEntity
@@ -15,15 +17,17 @@ import com.squishout.game.data.entity.UserSessionEntity
     entities = [
         LevelRecordEntity::class,
         JellySkinEntity::class,
-        UserSessionEntity::class
+        UserSessionEntity::class,
+        DailyPuzzleRecordEntity::class
     ],
-    version = 4
+    version = 5
 )
 @ConstructedBy(SquishDatabaseConstructor::class)
 abstract class SquishDatabase : RoomDatabase() {
     abstract fun levelDao(): LevelDao
     abstract fun jellySkinDao(): JellySkinDao
     abstract fun userSessionDao(): UserSessionDao
+    abstract fun dailyPuzzleDao(): DailyPuzzleDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

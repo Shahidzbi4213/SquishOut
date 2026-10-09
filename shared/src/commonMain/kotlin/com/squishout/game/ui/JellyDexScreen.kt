@@ -456,6 +456,7 @@ private fun HeroMascotCanvas(jellyId: String, modifier: Modifier = Modifier) {
             jellyId.contains("blueberry") -> listOf(Color(0xFF60A5FA), BlueberryBase, Color(0xFF1E3A8A))
             jellyId.contains("lemon") -> listOf(Color(0xFFFEF08A), LemonBase, Color(0xFFCA8A04))
             jellyId.contains("kiwi") -> listOf(Color(0xFF86EFAC), KiwiBase, Color(0xFF15803D))
+            jellyId.contains("cosmic") -> listOf(Color(0xFFF472B6), Color(0xFF8B5CF6), Color(0xFF1E1B4B))
             else -> listOf(Color(0xFFD8B4FE), GrapeBase, Color(0xFF6B21A8))
         }
 
@@ -516,6 +517,7 @@ private fun MiniJellyIcon(jellyId: String, modifier: Modifier = Modifier) {
             jellyId.contains("blueberry") -> listOf(Color(0xFF60A5FA), BlueberryBase)
             jellyId.contains("lemon") -> listOf(Color(0xFFFEF08A), LemonBase)
             jellyId.contains("kiwi") -> listOf(Color(0xFF86EFAC), KiwiBase)
+            jellyId.contains("cosmic") -> listOf(Color(0xFFF472B6), Color(0xFF8B5CF6))
             else -> listOf(Color(0xFFD8B4FE), GrapeBase)
         }
 
