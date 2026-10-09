@@ -33,6 +33,7 @@ import com.squishout.game.ui.components.CandyHeartsView
 import com.squishout.game.ui.components.GameIconType
 import com.squishout.game.ui.components.GameTactileButton
 import com.squishout.game.ui.components.StageHeaderPlaque
+import com.squishout.game.ui.components.TutorialOverlay
 
 @Composable
 fun GameScreen(
@@ -47,6 +48,25 @@ fun GameScreen(
 
     var isSettingsOpen by remember { mutableStateOf(false) }
     var isShopOpen by remember { mutableStateOf(false) }
+
+    val showTutorial = gameState.stageNumber == 1 &&
+        !session.hasCompletedTutorial &&
+        !viewModel.isDailyPuzzleMode &&
+        !gameState.isCompleted &&
+        !gameState.isGameOver
+
+    val isTutorialStep1 = showTutorial && gameState.movesUsed == 0
+
+    val awakeJelly = remember(gameState.board.jellies) {
+        gameState.board.jellies.firstOrNull { it.eyeState == EyeState.AWAKE }
+    }
+
+    val tutorialTargetJellyId = if (isTutorialStep1) awakeJelly?.id else null
+
+    val isTargetInTopHalf = remember(awakeJelly) {
+        val minY = awakeJelly?.tiles?.minOfOrNull { it.y } ?: 0
+        minY < 3
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -70,6 +90,7 @@ fun GameScreen(
                 GameHeader(
                     stage = gameState.stageNumber,
                     hearts = gameState.hearts,
+                    diamonds = session.diamonds,
                     biome = biome,
                     difficultyTier = difficultyTier,
                     onBack = onBackToMap,
@@ -91,6 +112,7 @@ fun GameScreen(
                         flyingRewardsFlow = viewModel.flyingRewards,
                         shatteredObstaclesFlow = viewModel.shatteredObstacles,
                         comboCalloutFlow = viewModel.comboCallout,
+                        tutorialTargetJellyId = tutorialTargetJellyId,
                         onTileTapped = viewModel::onTileTapped
                     )
                 }
@@ -118,6 +140,24 @@ fun GameScreen(
                 }
             }
 
+            // 3b. Level 1 Interactive Onboarding Tutorial Overlay
+            AnimatedVisibility(
+                visible = showTutorial,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                TutorialOverlay(
+                    isStep1 = isTutorialStep1,
+                    onGotIt = {
+                        viewModel.completeTutorial()
+                    },
+                    onSkip = {
+                        viewModel.skipTutorial()
+                    },
+                    isTargetInTopHalf = isTargetInTopHalf
+                )
+            }
+
             // 4. Level Victory Modal Overlay
             AnimatedVisibility(
                 visible = gameState.isCompleted,
@@ -139,7 +179,7 @@ fun GameScreen(
                 onReviveWithAd = {
                     viewModel.reviveWithAd()
                 },
-                onReviveWithGems = {
+                onReviveWithDiamonds = {
                     viewModel.purchaseHeartRefill()
                 },
                 onRestart = {
@@ -172,12 +212,11 @@ fun GameScreen(
             // 7. Booster Shop Modal Overlay
             BoosterShopModal(
                 isVisible = isShopOpen,
-                candies = session.candies,
-                gems = session.gems,
+                diamonds = session.diamonds,
                 onBuyUndo = { viewModel.purchaseUndoPack() },
                 onBuyHint = { viewModel.purchaseHintPack() },
                 onBuyWand = { viewModel.purchaseWandPack() },
-                onRefillHeartsGems = { viewModel.purchaseHeartRefill() },
+                onRefillHeartsDiamonds = { viewModel.purchaseHeartRefill() },
                 onRefillHeartAd = { viewModel.reviveWithAd() },
                 onDismiss = { isShopOpen = false }
             )
@@ -189,6 +228,7 @@ fun GameScreen(
 private fun GameHeader(
     stage: Int,
     hearts: Int,
+    diamonds: Int = 0,
     biome: BiomeTheme = BiomeTheme.SWEET_MEADOW,
     difficultyTier: com.squishout.engine.model.DifficultyTier = com.squishout.engine.model.DifficultyTier.NORMAL,
     onBack: () -> Unit,
@@ -208,6 +248,7 @@ private fun GameHeader(
         ) {
             StageHeaderPlaque(
                 stage = stage,
+                diamonds = diamonds,
                 biome = biome,
                 difficultyTier = difficultyTier
             )

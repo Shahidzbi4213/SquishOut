@@ -23,19 +23,28 @@ actual class AudioPlayer(private val context: Context) {
     private var musicTrack: AudioTrack? = null
     private var isMusicEnabled = true
     private var isSoundEnabled = true
+    private var isPausedByLifecycle = false
 
     init {
-        try {
-            tracks[SoundEffect.POP] = createTrack(generatePop())
-            tracks[SoundEffect.WOBBLE] = createTrack(generateWobble())
-            tracks[SoundEffect.VICTORY] = createTrack(generateVictory())
-            tracks[SoundEffect.BOOSTER] = createTrack(generateBooster())
-            tracks[SoundEffect.CRACK] = createTrack(generateCrack())
-            tracks[SoundEffect.COMBO] = createTrack(generateCombo())
+        initTracks()
+    }
 
-            val musicData = generateCozyMeadowMusic()
-            musicTrack = createTrack(musicData).apply {
-                setLoopPoints(0, musicData.size, -1)
+    private fun initTracks() {
+        try {
+            if (tracks.isEmpty()) {
+                tracks[SoundEffect.POP] = createTrack(generatePop())
+                tracks[SoundEffect.WOBBLE] = createTrack(generateWobble())
+                tracks[SoundEffect.VICTORY] = createTrack(generateVictory())
+                tracks[SoundEffect.BOOSTER] = createTrack(generateBooster())
+                tracks[SoundEffect.CRACK] = createTrack(generateCrack())
+                tracks[SoundEffect.COMBO] = createTrack(generateCombo())
+            }
+
+            if (musicTrack == null) {
+                val musicData = generateCozyMeadowMusic()
+                musicTrack = createTrack(musicData).apply {
+                    setLoopPoints(0, musicData.size, -1)
+                }
             }
         } catch (_: Throwable) {
             // AudioTrack creation fallback
@@ -246,8 +255,11 @@ actual class AudioPlayer(private val context: Context) {
     }
 
     actual fun playSound(sound: SoundEffect) {
-        if (!isSoundEnabled) return
+        if (!isSoundEnabled || isPausedByLifecycle) return
         try {
+            if (tracks.isEmpty()) {
+                initTracks()
+            }
             val track = tracks[sound] ?: return
             track.stop()
             track.reloadStaticData()
@@ -258,8 +270,11 @@ actual class AudioPlayer(private val context: Context) {
     }
 
     actual fun startMusic() {
-        if (!isMusicEnabled) return
+        if (!isMusicEnabled || isPausedByLifecycle) return
         try {
+            if (musicTrack == null) {
+                initTracks()
+            }
             musicTrack?.let {
                 if (it.playState != AudioTrack.PLAYSTATE_PLAYING) {
                     it.play()
@@ -278,10 +293,55 @@ actual class AudioPlayer(private val context: Context) {
         } catch (_: Throwable) {}
     }
 
+    actual fun pauseMusic() {
+        isPausedByLifecycle = true
+        try {
+            musicTrack?.let {
+                if (it.playState == AudioTrack.PLAYSTATE_PLAYING) {
+                    it.pause()
+                }
+            }
+        } catch (_: Throwable) {}
+    }
+
+    actual fun resumeMusic() {
+        isPausedByLifecycle = false
+        if (!isMusicEnabled) return
+        try {
+            if (musicTrack == null) {
+                initTracks()
+            }
+            musicTrack?.let {
+                if (it.playState != AudioTrack.PLAYSTATE_PLAYING) {
+                    it.play()
+                }
+            }
+        } catch (_: Throwable) {}
+    }
+
+    actual fun pauseAll() {
+        pauseMusic()
+        tracks.values.forEach { track ->
+            try {
+                if (track.playState == AudioTrack.PLAYSTATE_PLAYING) {
+                    track.pause()
+                    track.stop()
+                }
+            } catch (_: Throwable) {}
+        }
+    }
+
+    actual fun resumeAll() {
+        isPausedByLifecycle = false
+        resumeMusic()
+    }
+
     actual fun setMusicEnabled(enabled: Boolean) {
         isMusicEnabled = enabled
         if (enabled) {
-            startMusic()
+            if (!isPausedByLifecycle) {
+                startMusic()
+            }
         } else {
             stopMusic()
         }
@@ -289,9 +349,20 @@ actual class AudioPlayer(private val context: Context) {
 
     actual fun setSoundEnabled(enabled: Boolean) {
         isSoundEnabled = enabled
+        if (!enabled) {
+            tracks.values.forEach { track ->
+                try {
+                    if (track.playState == AudioTrack.PLAYSTATE_PLAYING) {
+                        track.pause()
+                        track.stop()
+                    }
+                } catch (_: Throwable) {}
+            }
+        }
     }
 
     actual fun triggerHaptic(type: HapticFeedbackType) {
+        if (isPausedByLifecycle) return
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val effect = when (type) {
@@ -334,6 +405,7 @@ actual class AudioPlayer(private val context: Context) {
     }
 
     actual fun release() {
+        isPausedByLifecycle = true
         try {
             musicTrack?.stop()
             musicTrack?.release()

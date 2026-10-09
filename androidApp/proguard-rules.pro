@@ -14,8 +14,20 @@
 
 # Uncomment this to preserve the line number information for
 # debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+-keepattributes SourceFile,LineNumberTable
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Koin DI
+-keep class org.koin.** { *; }
+-dontwarn org.koin.**
+
+# Room and SQLite
+-keep class androidx.room.** { *; }
+-keep class androidx.sqlite.** { *; }
+-dontwarn androidx.room.**
+
+# Game entities and models
+-keep class com.squishout.game.data.entity.** { *; }
+-keep class com.squishout.engine.model.** { *; }
+
+# Compose Multiplatform Resources
+-keep class org.jetbrains.compose.resources.** { *; }

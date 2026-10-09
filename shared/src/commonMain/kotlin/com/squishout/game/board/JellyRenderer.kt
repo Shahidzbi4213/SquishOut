@@ -97,8 +97,13 @@ object JellyRenderer {
             )
 
             // 2. Gummy Gradient Fill
+            val gradientColors = if (alpha >= 0.999f) {
+                cachedBaseColorLists.getValue(jelly.type)
+            } else {
+                listOf(lightColor.copy(alpha = alpha), baseColor.copy(alpha = alpha), darkColor.copy(alpha = alpha))
+            }
             val bodyBrush = Brush.radialGradient(
-                colors = listOf(lightColor.copy(alpha = alpha), baseColor.copy(alpha = alpha), darkColor.copy(alpha = alpha)),
+                colors = gradientColors,
                 center = Offset(rectLeft + adjustedWidth * 0.4f, rectTop + adjustedHeight * 0.35f),
                 radius = adjustedWidth * 0.8f
             )
@@ -457,14 +462,19 @@ object JellyRenderer {
                 color = Color.Black.copy(alpha = 0.25f * alpha)
             )
             // Gold Gradient Body
+            val cColors = if (alpha >= 0.999f) {
+                crownColors
+            } else {
+                listOf(
+                    Color(0xFFFFF07C).copy(alpha = alpha),
+                    Color(0xFFF59E0B).copy(alpha = alpha),
+                    Color(0xFFB45309).copy(alpha = alpha)
+                )
+            }
             drawPath(
                 path = crownPath,
                 brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFFFF07C).copy(alpha = alpha),
-                        Color(0xFFF59E0B).copy(alpha = alpha),
-                        Color(0xFFB45309).copy(alpha = alpha)
-                    ),
+                    colors = cColors,
                     startY = cy - crownHeight,
                     endY = cy
                 )
@@ -483,15 +493,26 @@ object JellyRenderer {
         }
     }
 
-    fun getPalette(type: JellyType): Triple<Color, Color, Color> = getColorPalette(type)
+    private val crownColors = listOf(
+        Color(0xFFFFF07C),
+        Color(0xFFF59E0B),
+        Color(0xFFB45309)
+    )
 
-    private fun getColorPalette(type: JellyType): Triple<Color, Color, Color> =
-        when (type) {
-            JellyType.STRAWBERRY -> Triple(SquishColors.Strawberry, SquishColors.StrawberryLight, SquishColors.StrawberryDark)
-            JellyType.BLUEBERRY -> Triple(SquishColors.Blueberry, SquishColors.BlueberryLight, SquishColors.BlueberryDark)
-            JellyType.LEMON -> Triple(SquishColors.Lemon, SquishColors.LemonLight, SquishColors.LemonDark)
-            JellyType.KIWI -> Triple(SquishColors.Kiwi, SquishColors.KiwiLight, SquishColors.KiwiDark)
-            JellyType.GRAPE_EEL -> Triple(SquishColors.Grape, SquishColors.GrapeLight, SquishColors.GrapeDark)
-            JellyType.KING_JELLY -> Triple(Color(0xFFFB8500), Color(0xFFFED7AA), Color(0xFFC2410C))
-        }
+    private val paletteMap: Map<JellyType, Triple<Color, Color, Color>> = mapOf(
+        JellyType.STRAWBERRY to Triple(SquishColors.Strawberry, SquishColors.StrawberryLight, SquishColors.StrawberryDark),
+        JellyType.BLUEBERRY to Triple(SquishColors.Blueberry, SquishColors.BlueberryLight, SquishColors.BlueberryDark),
+        JellyType.LEMON to Triple(SquishColors.Lemon, SquishColors.LemonLight, SquishColors.LemonDark),
+        JellyType.KIWI to Triple(SquishColors.Kiwi, SquishColors.KiwiLight, SquishColors.KiwiDark),
+        JellyType.GRAPE_EEL to Triple(SquishColors.Grape, SquishColors.GrapeLight, SquishColors.GrapeDark),
+        JellyType.KING_JELLY to Triple(Color(0xFFFB8500), Color(0xFFFED7AA), Color(0xFFC2410C))
+    )
+
+    private val cachedBaseColorLists: Map<JellyType, List<Color>> = paletteMap.mapValues { (_, triple) ->
+        listOf(triple.second, triple.first, triple.third)
+    }
+
+    fun getPalette(type: JellyType): Triple<Color, Color, Color> = paletteMap.getValue(type)
+
+    private fun getColorPalette(type: JellyType): Triple<Color, Color, Color> = paletteMap.getValue(type)
 }

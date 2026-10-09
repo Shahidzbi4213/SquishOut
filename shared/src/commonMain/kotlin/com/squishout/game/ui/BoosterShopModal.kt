@@ -73,12 +73,11 @@ import com.squishout.game.theme.StrawberryBase
 @Composable
 fun BoosterShopModal(
     isVisible: Boolean,
-    candies: Int,
-    gems: Int,
+    diamonds: Int,
     onBuyUndo: () -> Unit,
     onBuyHint: () -> Unit,
     onBuyWand: () -> Unit,
-    onRefillHeartsGems: () -> Unit,
+    onRefillHeartsDiamonds: () -> Unit,
     onRefillHeartAd: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
@@ -173,11 +172,8 @@ fun BoosterShopModal(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Balances
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                CandyBalanceBadge(amount = candies)
-                                GemBalanceBadge(amount = gems)
-                            }
+                            // Diamond Balance
+                            DiamondBalanceBadge(amount = diamonds)
 
                             // Close Button
                             Box(
@@ -239,10 +235,9 @@ fun BoosterShopModal(
                             ShopItemPlaqueRow(
                                 title = "+3 Undos",
                                 subtitle = "Rewind moves & restore board",
-                                costText = "50",
-                                isGems = false,
+                                costText = "10",
                                 isFree = false,
-                                canAfford = candies >= 50,
+                                canAfford = diamonds >= 10,
                                 iconComposable = { UndoBoosterVectorIcon() },
                                 onBuy = onBuyUndo
                             )
@@ -251,10 +246,9 @@ fun BoosterShopModal(
                             ShopItemPlaqueRow(
                                 title = "+3 Hints",
                                 subtitle = "Reveal next solvable squishy",
-                                costText = "75",
-                                isGems = false,
+                                costText = "15",
                                 isFree = false,
-                                canAfford = candies >= 75,
+                                canAfford = diamonds >= 15,
                                 iconComposable = { HintBoosterVectorIcon() },
                                 onBuy = onBuyHint
                             )
@@ -263,10 +257,9 @@ fun BoosterShopModal(
                             ShopItemPlaqueRow(
                                 title = "+1 Magic Wand",
                                 subtitle = "Vaporize any asleep blocker",
-                                costText = "100",
-                                isGems = false,
+                                costText = "25",
                                 isFree = false,
-                                canAfford = candies >= 100,
+                                canAfford = diamonds >= 25,
                                 iconComposable = { WandBoosterVectorIcon() },
                                 onBuy = onBuyWand
                             )
@@ -275,12 +268,11 @@ fun BoosterShopModal(
                             ShopItemPlaqueRow(
                                 title = "Full Life Refill",
                                 subtitle = "Refill lives immediately to 5/5",
-                                costText = "10",
-                                isGems = true,
+                                costText = "15",
                                 isFree = false,
-                                canAfford = gems >= 10,
+                                canAfford = diamonds >= 15,
                                 iconComposable = { HeartBoosterVectorIcon() },
-                                onBuy = onRefillHeartsGems
+                                onBuy = onRefillHeartsDiamonds
                             )
 
                             // Item 5: Free Video Ad Heart
@@ -288,7 +280,6 @@ fun BoosterShopModal(
                                 title = "Watch Ad: +1 Life",
                                 subtitle = "Free instant recovery bonus",
                                 costText = "FREE",
-                                isGems = false,
                                 isFree = true,
                                 canAfford = true,
                                 iconComposable = { AdVideoHeartVectorIcon() },
@@ -307,7 +298,6 @@ private fun ShopItemPlaqueRow(
     title: String,
     subtitle: String,
     costText: String,
-    isGems: Boolean,
     isFree: Boolean,
     canAfford: Boolean,
     iconComposable: @Composable () -> Unit,
@@ -366,7 +356,6 @@ private fun ShopItemPlaqueRow(
             // Tactile 3D Extruded Purchase Button
             ShopExtrudedButton(
                 costText = costText,
-                isGems = isGems,
                 isFree = isFree,
                 enabled = canAfford,
                 onClick = onBuy
@@ -378,7 +367,6 @@ private fun ShopItemPlaqueRow(
 @Composable
 private fun ShopExtrudedButton(
     costText: String,
-    isGems: Boolean,
     isFree: Boolean,
     enabled: Boolean,
     onClick: () -> Unit
@@ -396,15 +384,13 @@ private fun ShopExtrudedButton(
     val shadowBevelColor = when {
         !enabled -> Color(0xFF64748B)
         isFree -> Color(0xFFB45309)
-        isGems -> Color(0xFF0369A1)
-        else -> Color(0xFF065F46)
+        else -> Color(0xFF0369A1)
     }
 
     val faceGradient = when {
         !enabled -> listOf(Color(0xFFCBD5E1), Color(0xFF94A3B8))
         isFree -> listOf(Color(0xFFFBBF24), Color(0xFFF59E0B), Color(0xFFD97706))
-        isGems -> listOf(Color(0xFF38BDF8), Color(0xFF0284C7), Color(0xFF0369A1))
-        else -> listOf(Color(0xFF34D399), Color(0xFF10B981), Color(0xFF059669))
+        else -> listOf(Color(0xFF38BDF8), Color(0xFF0284C7), Color(0xFF0369A1))
     }
 
     Box(
@@ -446,11 +432,7 @@ private fun ShopExtrudedButton(
                         color = Color.White
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    if (isGems) {
-                        MiniGemIcon()
-                    } else {
-                        MiniCandyIcon()
-                    }
+                    MiniDiamondIcon()
                 }
             }
         }
@@ -458,7 +440,7 @@ private fun ShopExtrudedButton(
 }
 
 @Composable
-private fun CandyBalanceBadge(amount: Int) {
+private fun DiamondBalanceBadge(amount: Int) {
     val shape = RoundedCornerShape(16.dp)
     Row(
         modifier = Modifier
@@ -466,47 +448,20 @@ private fun CandyBalanceBadge(amount: Int) {
             .clip(shape)
             .background(
                 Brush.horizontalGradient(
-                    colors = listOf(Color(0xFFFDF2F8), Color(0xFFFCE7F3))
+                    colors = listOf(Color(0xFFF0F9FF), Color(0xFFE0F2FE))
                 )
             )
-            .border(1.dp, Color(0xFFFBCFE8), shape)
-            .padding(horizontal = 10.dp, vertical = 5.dp),
+            .border(1.dp, Color(0xFFBAE6FD), shape)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MiniCandyIcon()
-        Spacer(modifier = Modifier.width(5.dp))
+        MiniDiamondIcon()
+        Spacer(modifier = Modifier.width(6.dp))
         Text(
-            text = "$amount",
+            text = "💎 $amount Diamonds",
             fontSize = 13.sp,
             fontWeight = FontWeight.ExtraBold,
-            color = SlateCharcoal
-        )
-    }
-}
-
-@Composable
-private fun GemBalanceBadge(amount: Int) {
-    val shape = RoundedCornerShape(16.dp)
-    Row(
-        modifier = Modifier
-            .shadow(2.dp, shape)
-            .clip(shape)
-            .background(
-                Brush.horizontalGradient(
-                    colors = listOf(Color(0xFFF0FDF4), Color(0xFFE0E7FF))
-                )
-            )
-            .border(1.dp, Color(0xFFC7D2FE), shape)
-            .padding(horizontal = 10.dp, vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        MiniGemIcon()
-        Spacer(modifier = Modifier.width(5.dp))
-        Text(
-            text = "$amount",
-            fontSize = 13.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = SlateCharcoal
+            color = Color(0xFF0369A1)
         )
     }
 }
@@ -732,29 +687,7 @@ private fun AdVideoHeartVectorIcon() {
 }
 
 @Composable
-private fun MiniCandyIcon() {
-    Canvas(modifier = Modifier.size(15.dp)) {
-        val r = size.minDimension / 2f
-        val center = Offset(size.width / 2f, size.height / 2f)
-
-        // Candy round swirl
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(Color(0xFFF472B6), Color(0xFFDB2777)),
-                center = center,
-                radius = r
-            ),
-            radius = r,
-            center = center
-        )
-        // Diagonal candy stripe
-        drawCircle(color = Color.White.copy(alpha = 0.7f), radius = r * 0.45f, center = center)
-        drawCircle(color = Color(0xFFDB2777), radius = r * 0.25f, center = center)
-    }
-}
-
-@Composable
-private fun MiniGemIcon() {
+private fun MiniDiamondIcon() {
     Canvas(modifier = Modifier.size(15.dp)) {
         val w = size.width
         val h = size.height

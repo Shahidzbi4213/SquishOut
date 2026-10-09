@@ -462,8 +462,8 @@ private fun SagaHeader(
             // LEFT: Player Profile Capsule with Golden Beveled Rim & LVL Ribbon
             PlayerProfileBadge(stage = session.currentStage)
 
-            // CENTER: Candy Currency Pill (Swirl Candy + Gold Numbers + Emerald '+')
-            CandyCurrencyPill(candies = session.candies, onClick = onOpenShop)
+            // CENTER: Diamond Currency Pill (Faceted Diamond + Azure Numbers + Plus)
+            DiamondCurrencyPill(diamonds = session.diamonds, onClick = onOpenShop)
 
             // RIGHT: Hearts Capsule, Star Chest Milestone & Bouncing Daily Gift Chest
             Row(
@@ -562,17 +562,17 @@ private fun PlayerProfileBadge(stage: Int) {
 }
 
 @Composable
-private fun CandyCurrencyPill(candies: Int, onClick: () -> Unit) {
+private fun DiamondCurrencyPill(diamonds: Int, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .shadow(3.dp, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFFFFFDF8), Color(0xFFFFF3DC))
+                    listOf(Color(0xFFF0F9FF), Color(0xFFE0F2FE))
                 )
             )
-            .border(1.5.dp, Color(0xFFFFE8A3), RoundedCornerShape(20.dp))
+            .border(1.5.dp, Color(0xFFBAE6FD), RoundedCornerShape(20.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 9.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center
@@ -581,46 +581,54 @@ private fun CandyCurrencyPill(candies: Int, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            // 3D Swirl Peppermint Icon
+            // 3D Faceted Diamond Icon
             Canvas(modifier = Modifier.size(18.dp)) {
-                val r = size.minDimension / 2f
-                val center = Offset(size.width / 2f, size.height / 2f)
-                drawCircle(
-                    brush = Brush.sweepGradient(
-                        colors = listOf(
-                            Color(0xFFFF4D6D),
-                            Color(0xFFFFFFFF),
-                            Color(0xFFFF4D6D),
-                            Color(0xFFFFFFFF),
-                            Color(0xFFFF4D6D)
-                        ),
-                        center = center
+                val w = size.width
+                val h = size.height
+                val gemPath = Path().apply {
+                    moveTo(w * 0.25f, h * 0.18f)
+                    lineTo(w * 0.75f, h * 0.18f)
+                    lineTo(w * 0.95f, h * 0.46f)
+                    lineTo(w * 0.50f, h * 0.90f)
+                    lineTo(w * 0.05f, h * 0.46f)
+                    close()
+                }
+                drawPath(
+                    path = gemPath,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color(0xFF7DD3FC), Color(0xFF0284C7), Color(0xFF0369A1))
                     ),
-                    radius = r,
-                    center = center
+                    style = Fill
                 )
-                drawCircle(
-                    color = Color.White.copy(alpha = 0.5f),
-                    radius = r * 0.35f,
-                    center = center
+                drawPath(
+                    path = gemPath,
+                    color = Color.White.copy(alpha = 0.8f),
+                    style = Stroke(width = 1.dp.toPx())
                 )
+                val tablePath = Path().apply {
+                    moveTo(w * 0.35f, h * 0.18f)
+                    lineTo(w * 0.65f, h * 0.18f)
+                    lineTo(w * 0.50f, h * 0.46f)
+                    close()
+                }
+                drawPath(path = tablePath, color = Color.White.copy(alpha = 0.6f), style = Fill)
             }
 
             Text(
-                text = "$candies",
+                text = "$diamonds",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFF592800)
+                color = Color(0xFF0369A1)
             )
 
-            // Mini Gold Plus
+            // Mini Azure Plus
             Box(
                 modifier = Modifier
                     .size(15.dp)
                     .clip(CircleShape)
                     .background(
                         Brush.verticalGradient(
-                            listOf(Color(0xFFFFE494), Color(0xFFF59E0B))
+                            listOf(Color(0xFF38BDF8), Color(0xFF0284C7))
                         )
                     ),
                 contentAlignment = Alignment.Center
@@ -629,7 +637,7 @@ private fun CandyCurrencyPill(candies: Int, onClick: () -> Unit) {
                     text = "+",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Black,
-                    color = Color(0xFF592800),
+                    color = Color.White,
                     modifier = Modifier.offset(y = (-1).dp)
                 )
             }

@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.squishout.game.data.entity.UserSessionEntity
 import com.squishout.game.data.repository.GameRepository
 import com.squishout.game.presentation.GameViewModel
@@ -39,6 +40,13 @@ fun App() {
     val repository = koinInject<GameRepository>()
     val viewModel = koinViewModel<GameViewModel>()
     val scope = rememberCoroutineScope()
+
+    LifecycleResumeEffect(Unit) {
+        viewModel.resumeAllAudio()
+        onPauseOrDispose {
+            viewModel.pauseAllAudio()
+        }
+    }
 
     var currentScreen by remember { mutableStateOf(AppScreen.SAGA_MAP) }
     var isShopOpen by remember { mutableStateOf(false) }
@@ -150,12 +158,11 @@ fun App() {
             // Global Booster Shop Modal for Map & Dex
             com.squishout.game.ui.BoosterShopModal(
                 isVisible = isShopOpen,
-                candies = session.candies,
-                gems = session.gems,
+                diamonds = session.diamonds,
                 onBuyUndo = { viewModel.purchaseUndoPack() },
                 onBuyHint = { viewModel.purchaseHintPack() },
                 onBuyWand = { viewModel.purchaseWandPack() },
-                onRefillHeartsGems = { viewModel.purchaseHeartRefill() },
+                onRefillHeartsDiamonds = { viewModel.purchaseHeartRefill() },
                 onRefillHeartAd = { viewModel.reviveWithAd() },
                 onDismiss = { isShopOpen = false }
             )

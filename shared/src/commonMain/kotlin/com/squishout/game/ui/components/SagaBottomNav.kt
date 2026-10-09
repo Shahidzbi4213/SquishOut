@@ -244,13 +244,13 @@ fun SagaBottomNav(
                         modifier = Modifier.width(tabWidth)
                     )
 
-                    // TAB 3: Candy Shop
+                    // TAB 3: Shop
                     SagaNavTab(
                         label = "Shop",
                         isActive = selectedIndex == 2,
                         onClick = onShopClick,
                         iconContent = { isActive ->
-                            NavShopCandyIcon(isActive = isActive)
+                            NavShopDiamondIcon(isActive = isActive)
                         },
                         modifier = Modifier.width(tabWidth)
                     )
@@ -620,23 +620,23 @@ private fun NavJelliesPawIcon(isActive: Boolean) {
 }
 
 /**
- * Candy Shop Icon:
- * 3D Striped Peppermint Swirl with faceted cellophane candy wrapper wings.
+ * Diamond Shop Icon:
+ * 3D Shiny Faceted Diamond Vector Icon with idle shimmer animation.
  */
 @Composable
-private fun NavShopCandyIcon(isActive: Boolean) {
-    val infiniteTransition = rememberInfiniteTransition(label = "candy_shimmer")
-    val idleAngle by infiniteTransition.animateFloat(
-        initialValue = -6f,
-        targetValue = 6f,
+private fun NavShopDiamondIcon(isActive: Boolean) {
+    val infiniteTransition = rememberInfiniteTransition(label = "diamond_shimmer")
+    val idleScale by infiniteTransition.animateFloat(
+        initialValue = 0.96f,
+        targetValue = 1.04f,
         animationSpec = infiniteRepeatable(
             animation = tween(1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "candy_rot"
+        label = "diamond_pulse"
     )
 
-    val scale = if (isActive) 1.08f else 0.95f
+    val scale = (if (isActive) 1.10f else 0.95f) * idleScale
 
     Canvas(
         modifier = Modifier
@@ -645,83 +645,106 @@ private fun NavShopCandyIcon(isActive: Boolean) {
     ) {
         val w = size.width
         val h = size.height
-        val center = Offset(w * 0.50f, h * 0.50f)
-        val candyRadius = 7.5.dp.toPx()
 
-        // 1. Cellophane Candy Wrapper Wings (Left & Right Flaps)
-        val wrapperColor = if (isActive) Color(0xFFF59E0B).copy(alpha = 0.75f) else Color(0xFF94A3B8).copy(alpha = 0.50f)
-
-        // Left wing fan
-        val leftWing = Path().apply {
-            moveTo(center.x - candyRadius * 0.7f, center.y)
-            lineTo(w * 0.08f, h * 0.28f)
-            lineTo(w * 0.12f, h * 0.50f)
-            lineTo(w * 0.08f, h * 0.72f)
+        // 1. Soft azure ambient drop shadow
+        val shadowPath = Path().apply {
+            moveTo(w * 0.25f, h * 0.22f + 2.dp.toPx())
+            lineTo(w * 0.75f, h * 0.22f + 2.dp.toPx())
+            lineTo(w * 0.95f, h * 0.48f + 2.dp.toPx())
+            lineTo(w * 0.50f, h * 0.92f + 2.dp.toPx())
+            lineTo(w * 0.05f, h * 0.48f + 2.dp.toPx())
             close()
         }
-        drawPath(path = leftWing, color = wrapperColor)
-        drawPath(path = leftWing, color = Color.White.copy(alpha = 0.6f), style = Stroke(1.dp.toPx()))
-
-        // Right wing fan
-        val rightWing = Path().apply {
-            moveTo(center.x + candyRadius * 0.7f, center.y)
-            lineTo(w * 0.92f, h * 0.28f)
-            lineTo(w * 0.88f, h * 0.50f)
-            lineTo(w * 0.92f, h * 0.72f)
-            close()
-        }
-        drawPath(path = rightWing, color = wrapperColor)
-        drawPath(path = rightWing, color = Color.White.copy(alpha = 0.6f), style = Stroke(1.dp.toPx()))
-
-        // 2. Central Candy Disc Drop Shadow
-        drawCircle(
-            color = Color(0xFF7F1D1D).copy(alpha = 0.40f),
-            radius = candyRadius,
-            center = Offset(center.x, center.y + 2.dp.toPx())
+        drawPath(
+            path = shadowPath,
+            color = Color(0xFF0369A1).copy(alpha = 0.35f)
         )
 
-        // Central White Porcelain Peppermint Disc Base
-        drawCircle(
-            brush = Brush.radialGradient(
-                listOf(Color(0xFFFFFFFF), Color(0xFFFFF1F2), Color(0xFFFFE4E6)),
-                center = center
+        // 2. Base Brilliant Faceted Diamond Polygon
+        val mainPath = Path().apply {
+            moveTo(w * 0.25f, h * 0.20f)
+            lineTo(w * 0.75f, h * 0.20f)
+            lineTo(w * 0.95f, h * 0.46f)
+            lineTo(w * 0.50f, h * 0.90f)
+            lineTo(w * 0.05f, h * 0.46f)
+            close()
+        }
+        drawPath(
+            path = mainPath,
+            brush = Brush.verticalGradient(
+                colors = if (isActive) {
+                    listOf(Color(0xFFE0F2FE), Color(0xFF38BDF8), Color(0xFF0284C7), Color(0xFF0369A1))
+                } else {
+                    listOf(Color(0xFFF1F5F9), Color(0xFF94A3B8), Color(0xFF64748B))
+                }
             ),
-            radius = candyRadius,
-            center = center
+            style = Fill
         )
 
-        // 3. Spiraling Peppermint Candy Cane Swirl Stripes
-        val stripeColor = if (isActive) Color(0xFFE11D48) else Color(0xFFF43F5E)
-        val numStripes = 6
-        for (i in 0 until numStripes) {
-            val angleDeg = (i * (360f / numStripes)) + idleAngle
-            val rad = (angleDeg * (3.14159265f / 180f))
-            val radNext = ((angleDeg + 24f) * (3.14159265f / 180f))
-
-            val stripePath = Path().apply {
-                moveTo(center.x, center.y)
-                lineTo(center.x + candyRadius * cos(rad), center.y + candyRadius * sin(rad))
-                lineTo(center.x + candyRadius * cos(radNext), center.y + candyRadius * sin(radNext))
-                close()
-            }
-            drawPath(path = stripePath, color = stripeColor)
+        // 3. Facet lines & upper table facet
+        val tablePath = Path().apply {
+            moveTo(w * 0.34f, h * 0.20f)
+            lineTo(w * 0.66f, h * 0.20f)
+            lineTo(w * 0.50f, h * 0.46f)
+            close()
         }
+        drawPath(
+            path = tablePath,
+            color = Color.White.copy(alpha = if (isActive) 0.85f else 0.50f),
+            style = Fill
+        )
 
-        // Disc Golden/Porcelain Rim Ring
-        drawCircle(
-            color = if (isActive) Color(0xFFFFD54F) else Color(0xFFE2E8F0),
-            radius = candyRadius,
-            center = center,
+        // Left upper facet
+        val leftFacet = Path().apply {
+            moveTo(w * 0.25f, h * 0.20f)
+            lineTo(w * 0.34f, h * 0.20f)
+            lineTo(w * 0.50f, h * 0.46f)
+            lineTo(w * 0.05f, h * 0.46f)
+            close()
+        }
+        drawPath(
+            path = leftFacet,
+            color = Color.White.copy(alpha = if (isActive) 0.50f else 0.30f),
+            style = Fill
+        )
+
+        // Right upper facet
+        val rightFacet = Path().apply {
+            moveTo(w * 0.75f, h * 0.20f)
+            lineTo(w * 0.66f, h * 0.20f)
+            lineTo(w * 0.50f, h * 0.46f)
+            lineTo(w * 0.95f, h * 0.46f)
+            close()
+        }
+        drawPath(
+            path = rightFacet,
+            color = Color.White.copy(alpha = if (isActive) 0.35f else 0.20f),
+            style = Fill
+        )
+
+        // Pavilion center dividing facet line
+        val centerV = Path().apply {
+            moveTo(w * 0.50f, h * 0.46f)
+            lineTo(w * 0.50f, h * 0.90f)
+        }
+        drawPath(
+            path = centerV,
+            color = Color.White.copy(alpha = 0.70f),
             style = Stroke(width = 1.2.dp.toPx())
         )
 
-        // Specular Gloss Highlight Crescent on Top
-        drawOval(
-            brush = Brush.verticalGradient(
-                listOf(Color.White.copy(alpha = 0.85f), Color.Transparent)
-            ),
-            topLeft = Offset(center.x - candyRadius * 0.6f, center.y - candyRadius * 0.85f),
-            size = Size(candyRadius * 1.2f, candyRadius * 0.6f)
+        // Outline contour
+        drawPath(
+            path = mainPath,
+            color = if (isActive) Color(0xFFBAE6FD) else Color(0xFFCBD5E1),
+            style = Stroke(width = 1.2.dp.toPx())
+        )
+
+        // Top specular sparkle dot
+        drawCircle(
+            color = Color.White,
+            radius = 1.8.dp.toPx(),
+            center = Offset(w * 0.32f, h * 0.24f)
         )
     }
 }

@@ -8,6 +8,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -142,7 +143,7 @@ fun JellyDexScreen(
                     SkinCard(
                         skin = skin,
                         onEquip = { onEquipSkin(skin.jellyId) },
-                        onUnlock = { onUnlockSkin(skin.jellyId, 100) }
+                        onUnlock = { onUnlockSkin(skin.jellyId, 25) }
                     )
                 }
 
@@ -199,31 +200,23 @@ private fun DexHeader(session: UserSessionEntity, skinsCount: Int, totalCount: I
                 )
             }
 
-            // Candies & Gems
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(FrostedWhite)
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "🍬", fontSize = 13.sp)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "${session.candies}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SlateCharcoal)
-                }
-
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(FrostedWhite)
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "💎", fontSize = 13.sp)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "${session.gems}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SlateCharcoal)
-                }
+            // Diamonds Balance Pill
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(FrostedWhite)
+                    .border(1.dp, Color(0xFFBAE6FD), RoundedCornerShape(16.dp))
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "💎", fontSize = 14.sp)
+                Spacer(modifier = Modifier.width(5.dp))
+                Text(
+                    text = "${session.diamonds}",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF0369A1)
+                )
             }
         }
     }
@@ -406,7 +399,7 @@ private fun SkinCard(
                             .clip(RoundedCornerShape(12.dp))
                             .background(
                                 Brush.horizontalGradient(
-                                    listOf(Color(0xFFF59E0B), Color(0xFFD97706))
+                                    listOf(Color(0xFF38BDF8), Color(0xFF0284C7))
                                 )
                             )
                             .clickable { onUnlock() }
@@ -414,7 +407,7 @@ private fun SkinCard(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "🍬 100",
+                            text = "💎 25",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.White

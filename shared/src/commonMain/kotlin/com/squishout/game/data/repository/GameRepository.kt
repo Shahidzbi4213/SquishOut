@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.math.min
@@ -44,6 +45,7 @@ class GameRepository(
     val allSkins: Flow<List<JellySkinEntity>> = skinDao.getAllSkins()
     val equippedSkin: Flow<JellySkinEntity?> = skinDao.getEquippedSkin()
     val totalStars: Flow<Int?> = levelDao.getTotalStars()
+    val hasCompletedTutorial: Flow<Boolean> = session.map { it.hasCompletedTutorial }
 
     init {
         scope.launch {
@@ -58,8 +60,7 @@ class GameRepository(
             sessionDao.insertOrUpdate(
                 UserSessionEntity(
                     id = 1,
-                    candies = 150,
-                    gems = 15,
+                    diamonds = 50,
                     lives = MAX_LIVES,
                     maxLives = MAX_LIVES,
                     lastLifeRefillEpoch = 0L,
@@ -96,7 +97,7 @@ class GameRepository(
                 isUnlocked = false,
                 level = 1,
                 isEquipped = false,
-                perkDescription = "+10% bonus Candies on 3-star finish"
+                perkDescription = "+10% bonus Diamonds on 3-star finish"
             ),
             JellySkinEntity(
                 jellyId = "kiwi_hopper",
@@ -195,43 +196,38 @@ class GameRepository(
             )
         )
 
-        // Award candies: 25 base + 15 per star, boosted by difficulty tier
-        val baseCandies = 25 + (stars * 15)
-        val candiesAwarded = when (difficultyTier) {
-            com.squishout.engine.model.DifficultyTier.SUPER_HARD -> baseCandies * 2
-            com.squishout.engine.model.DifficultyTier.HARD -> (baseCandies * 1.5).toInt()
-            else -> baseCandies
+        // Award diamonds: 10 base + 5 per star, boosted by difficulty tier
+        val baseDiamonds = 10 + (stars * 5)
+        val diamondsAwarded = when (difficultyTier) {
+            com.squishout.engine.model.DifficultyTier.SUPER_HARD -> baseDiamonds * 2
+            com.squishout.engine.model.DifficultyTier.HARD -> (baseDiamonds * 1.5).toInt()
+            else -> baseDiamonds
         }
-        sessionDao.addCandies(candiesAwarded)
-
-        // Super Hard boss victory bonus: 5 gems!
-        if (difficultyTier == com.squishout.engine.model.DifficultyTier.SUPER_HARD) {
-            sessionDao.addGems(5)
-        }
+        sessionDao.addDiamonds(diamondsAwarded)
 
         // Advance unlocked stage if current level completed
         val currentSession = sessionDao.getSession().firstOrNull()
         if (currentSession != null && levelNumber >= currentSession.currentStage) {
             sessionDao.updateCurrentStage(levelNumber + 1)
         }
+        if (levelNumber == 1) {
+            sessionDao.updateHasCompletedTutorial(true)
+        }
     }
 
-    suspend fun spendCandies(amount: Int): Boolean {
+    suspend fun spendDiamonds(amount: Int): Boolean {
         val currentSession = sessionDao.getSession().firstOrNull() ?: return false
-        if (currentSession.candies < amount) return false
-        sessionDao.addCandies(-amount)
+        if (currentSession.diamonds < amount) return false
+        sessionDao.addDiamonds(-amount)
         return true
     }
 
-    suspend fun spendGems(amount: Int): Boolean {
-        val currentSession = sessionDao.getSession().firstOrNull() ?: return false
-        if (currentSession.gems < amount) return false
-        sessionDao.addGems(-amount)
-        return true
+    suspend fun addDiamonds(amount: Int) {
+        sessionDao.addDiamonds(amount)
     }
 
-    suspend fun reviveWithGems(costGems: Int = 10): Boolean {
-        if (!spendGems(costGems)) return false
+    suspend fun reviveWithDiamonds(costDiamonds: Int = 10): Boolean {
+        if (!spendDiamonds(costDiamonds)) return false
         val currentSession = sessionDao.getSession().firstOrNull() ?: return false
         sessionDao.insertOrUpdate(
             currentSession.copy(
@@ -258,8 +254,8 @@ class GameRepository(
         skinDao.equipSkin(jellyId)
     }
 
-    suspend fun unlockSkin(jellyId: String, costCandies: Int): Boolean {
-        if (!spendCandies(costCandies)) return false
+    suspend fun unlockSkin(jellyId: String, costDiamonds: Int): Boolean {
+        if (!spendDiamonds(costDiamonds)) return false
         skinDao.insertOrUpdate(
             JellySkinEntity(
                 jellyId = jellyId,
@@ -285,6 +281,14 @@ class GameRepository(
         sessionDao.updateHapticsEnabled(enabled)
     }
 
+    suspend fun completeTutorial() {
+        sessionDao.updateHasCompletedTutorial(true)
+    }
+
+    suspend fun skipTutorial() {
+        completeTutorial()
+    }
+
     suspend fun claimDailyReward(currentEpochMs: Long): DailyReward? {
         val currentSession = sessionDao.getSession().firstOrNull() ?: return null
         val currentDay = currentEpochMs / (24 * 60 * 60 * 1000L)
@@ -302,8 +306,7 @@ class GameRepository(
         }
 
         val reward = DAILY_REWARDS_SCHEDULE[(newStreak - 1).coerceIn(0, 6)]
-        if (reward.candies > 0) sessionDao.addCandies(reward.candies)
-        if (reward.gems > 0) sessionDao.addGems(reward.gems)
+        if (reward.diamonds > 0) sessionDao.addDiamonds(reward.diamonds)
         if (reward.lives > 0) {
             val newLives = min(currentSession.maxLives, currentSession.lives + reward.lives)
             sessionDao.insertOrUpdate(currentSession.copy(lives = newLives))
@@ -328,8 +331,7 @@ class GameRepository(
         claimedList.add(key)
         sessionDao.insertOrUpdate(
             currentSession.copy(
-                candies = currentSession.candies + milestone.candies,
-                gems = currentSession.gems + milestone.gems,
+                diamonds = currentSession.diamonds + milestone.diamonds,
                 claimedStarChests = claimedList.joinToString(",")
             )
         )
@@ -373,10 +375,9 @@ class GameRepository(
             else -> 1 // reset streak to 1
         }
 
-        // Daily rewards: 100 candies, 10 gems
+        // Daily puzzle reward: +25 diamonds
         val updatedSession = currentSession.copy(
-            candies = currentSession.candies + 100,
-            gems = currentSession.gems + 10,
+            diamonds = currentSession.diamonds + 25,
             dailyPuzzleStreak = newStreak,
             lastDailyPuzzleEpochDay = epochDay
         )
@@ -396,18 +397,13 @@ class GameRepository(
         if (claimedSet.contains(key)) return false
 
         claimedSet.add(key)
-        var addedCandies = 0
-        var addedGems = 0
+        var addedDiamonds = 0
 
         when (milestoneDays) {
-            5 -> addedCandies = 150
-            10 -> {
-                addedCandies = 200
-                addedGems = 25
-            }
+            5 -> addedDiamonds = 50
+            10 -> addedDiamonds = 100
             20 -> {
-                addedCandies = 300
-                addedGems = 50
+                addedDiamonds = 150
                 // Unlock Cosmic Nebula skin
                 skinDao.insertOrUpdate(
                     JellySkinEntity(
@@ -425,8 +421,7 @@ class GameRepository(
 
         sessionDao.insertOrUpdate(
             currentSession.copy(
-                candies = currentSession.candies + addedCandies,
-                gems = currentSession.gems + addedGems,
+                diamonds = currentSession.diamonds + addedDiamonds,
                 claimedMonthlyMilestones = claimedSet.joinToString(",")
             )
         )
@@ -437,53 +432,50 @@ class GameRepository(
 data class StarChestMilestone(
     val requiredStars: Int,
     val stageAnchor: Int,
-    val candies: Int,
-    val gems: Int,
+    val diamonds: Int,
     val hintBoosters: Int = 0,
     val undoBoosters: Int = 0,
     val wandBoosters: Int = 0
 )
 
 val STAR_CHEST_MILESTONES = listOf(
-    StarChestMilestone(requiredStars = 15, stageAnchor = 10, candies = 100, gems = 10, hintBoosters = 1),
-    StarChestMilestone(requiredStars = 30, stageAnchor = 20, candies = 150, gems = 15, wandBoosters = 1),
-    StarChestMilestone(requiredStars = 50, stageAnchor = 35, candies = 200, gems = 20, undoBoosters = 2),
-    StarChestMilestone(requiredStars = 75, stageAnchor = 50, candies = 250, gems = 25, hintBoosters = 2),
-    StarChestMilestone(requiredStars = 100, stageAnchor = 70, candies = 350, gems = 35, wandBoosters = 2),
-    StarChestMilestone(requiredStars = 150, stageAnchor = 100, candies = 500, gems = 50, hintBoosters = 2, undoBoosters = 2, wandBoosters = 2)
+    StarChestMilestone(requiredStars = 15, stageAnchor = 10, diamonds = 25, hintBoosters = 1),
+    StarChestMilestone(requiredStars = 30, stageAnchor = 20, diamonds = 40, wandBoosters = 1),
+    StarChestMilestone(requiredStars = 50, stageAnchor = 35, diamonds = 60, undoBoosters = 2),
+    StarChestMilestone(requiredStars = 75, stageAnchor = 50, diamonds = 80, hintBoosters = 2),
+    StarChestMilestone(requiredStars = 100, stageAnchor = 70, diamonds = 120, wandBoosters = 2),
+    StarChestMilestone(requiredStars = 150, stageAnchor = 100, diamonds = 200, hintBoosters = 2, undoBoosters = 2, wandBoosters = 2)
 )
 
 data class DailyReward(
     val day: Int,
     val rewardTitle: String,
     val icon: String,
-    val candies: Int = 0,
-    val gems: Int = 0,
+    val diamonds: Int = 0,
     val lives: Int = 0
 )
 
 val DAILY_REWARDS_SCHEDULE = listOf(
-    DailyReward(day = 1, rewardTitle = "50 Candies", icon = "🍬", candies = 50),
+    DailyReward(day = 1, rewardTitle = "15 Diamonds", icon = "💎", diamonds = 15),
     DailyReward(day = 2, rewardTitle = "+1 Life", icon = "❤️", lives = 1),
-    DailyReward(day = 3, rewardTitle = "75 Candies", icon = "🍬", candies = 75),
-    DailyReward(day = 4, rewardTitle = "10 Gems", icon = "💎", gems = 10),
-    DailyReward(day = 5, rewardTitle = "100 Candies", icon = "🍬", candies = 100),
-    DailyReward(day = 6, rewardTitle = "15 Gems", icon = "💎", gems = 15),
-    DailyReward(day = 7, rewardTitle = "Mega Box", icon = "🎁", candies = 250, gems = 25)
+    DailyReward(day = 3, rewardTitle = "25 Diamonds", icon = "💎", diamonds = 25),
+    DailyReward(day = 4, rewardTitle = "35 Diamonds", icon = "💎", diamonds = 35),
+    DailyReward(day = 5, rewardTitle = "50 Diamonds", icon = "💎", diamonds = 50),
+    DailyReward(day = 6, rewardTitle = "75 Diamonds", icon = "💎", diamonds = 75),
+    DailyReward(day = 7, rewardTitle = "Mega Box", icon = "🎁", diamonds = 150)
 )
 
 data class MonthlyMilestone(
     val requiredDays: Int,
     val rewardTitle: String,
     val iconEmoji: String,
-    val candies: Int = 0,
-    val gems: Int = 0,
+    val diamonds: Int = 0,
     val skinRewardId: String? = null
 )
 
 val MONTHLY_MILESTONES = listOf(
-    MonthlyMilestone(requiredDays = 5, rewardTitle = "150 Candies", iconEmoji = "🍬", candies = 150),
-    MonthlyMilestone(requiredDays = 10, rewardTitle = "200 Candies + 25 Gems", iconEmoji = "💎", candies = 200, gems = 25),
-    MonthlyMilestone(requiredDays = 20, rewardTitle = "Cosmic Nebula Skin", iconEmoji = "🌌", candies = 300, gems = 50, skinRewardId = "cosmic_nebula")
+    MonthlyMilestone(requiredDays = 5, rewardTitle = "50 Diamonds", iconEmoji = "💎", diamonds = 50),
+    MonthlyMilestone(requiredDays = 10, rewardTitle = "100 Diamonds", iconEmoji = "💎", diamonds = 100),
+    MonthlyMilestone(requiredDays = 20, rewardTitle = "Cosmic Nebula Skin", iconEmoji = "🌌", diamonds = 150, skinRewardId = "cosmic_nebula")
 )
 

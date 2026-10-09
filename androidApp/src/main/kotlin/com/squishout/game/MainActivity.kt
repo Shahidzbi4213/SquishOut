@@ -11,8 +11,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.squishout.game.audio.AudioPlayer
+import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
+
+    private val audioPlayer: AudioPlayer by inject()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -28,6 +33,21 @@ class MainActivity : ComponentActivity() {
         setContent {
             App()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        audioPlayer.resumeAll()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        audioPlayer.pauseAll()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        audioPlayer.pauseAll()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

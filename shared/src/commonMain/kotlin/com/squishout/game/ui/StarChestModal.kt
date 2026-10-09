@@ -53,7 +53,7 @@ import com.squishout.game.ui.components.ModalExtrudedButton
  * Displays milestone loot breakdown with 3D porcelain plaque styling:
  * - 3D Gift Box header with celebratory star aura
  * - Stars collected progress status
- * - Candies, Gems, and Booster reward capsules
+ * - Diamonds and Booster reward capsules
  * - Tactile 3D extruded claim button
  */
 @Composable
@@ -226,16 +226,9 @@ fun StarChestModal(
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            // Candies Reward Row
+                            // Diamonds Reward Row
                             RewardItemRow(
-                                title = "+${milestone.candies} Candies",
-                                iconEmoji = "🍬",
-                                accentColor = Color(0xFFE11D48)
-                            )
-
-                            // Gems Reward Row
-                            RewardItemRow(
-                                title = "+${milestone.gems} Gems",
+                                title = "+${milestone.diamonds} Diamonds",
                                 iconEmoji = "💎",
                                 accentColor = Color(0xFF0284C7)
                             )

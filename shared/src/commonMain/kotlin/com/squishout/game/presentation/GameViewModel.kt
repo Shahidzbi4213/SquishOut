@@ -322,6 +322,9 @@ class GameViewModel(
                                 timestampEpoch = 0L,
                                 difficultyTier = _currentDifficultyTier.value
                             )
+                            if (currentStage == 1) {
+                                repository?.completeTutorial()
+                            }
                         }
                     }
                 }
@@ -474,9 +477,29 @@ class GameViewModel(
         audioPlayer?.stopMusic()
     }
 
+    fun pauseMusic() {
+        audioPlayer?.pauseMusic()
+    }
+
+    fun resumeMusic() {
+        if (sessionState.value.musicEnabled) {
+            audioPlayer?.resumeMusic()
+        }
+    }
+
+    fun pauseAllAudio() {
+        audioPlayer?.pauseAll()
+    }
+
+    fun resumeAllAudio() {
+        if (sessionState.value.musicEnabled) {
+            audioPlayer?.resumeAll()
+        }
+    }
+
     fun purchaseUndoPack(onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
-            if (repository?.spendCandies(50) == true) {
+            if (repository?.spendDiamonds(10) == true) {
                 engine.addBoosters(undo = 3)
                 playSound(SoundEffect.BOOSTER)
                 triggerHaptic(HapticFeedbackType.LIGHT_CLICK)
@@ -487,7 +510,7 @@ class GameViewModel(
 
     fun purchaseHintPack(onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
-            if (repository?.spendCandies(75) == true) {
+            if (repository?.spendDiamonds(15) == true) {
                 engine.addBoosters(hint = 3)
                 playSound(SoundEffect.BOOSTER)
                 triggerHaptic(HapticFeedbackType.LIGHT_CLICK)
@@ -498,7 +521,7 @@ class GameViewModel(
 
     fun purchaseWandPack(onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
-            if (repository?.spendCandies(100) == true) {
+            if (repository?.spendDiamonds(25) == true) {
                 engine.addBoosters(wand = 1)
                 playSound(SoundEffect.BOOSTER)
                 triggerHaptic(HapticFeedbackType.LIGHT_CLICK)
@@ -509,7 +532,18 @@ class GameViewModel(
 
     fun purchaseHeartRefill(onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
-            if (repository?.reviveWithGems(10) == true) {
+            if (repository?.reviveWithDiamonds(15) == true) {
+                engine.refillHearts()
+                playSound(SoundEffect.BOOSTER)
+                triggerHaptic(HapticFeedbackType.LIGHT_CLICK)
+                onSuccess()
+            }
+        }
+    }
+
+    fun reviveWithDiamonds(costDiamonds: Int = 10, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            if (repository?.reviveWithDiamonds(costDiamonds) == true) {
                 engine.refillHearts()
                 playSound(SoundEffect.BOOSTER)
                 triggerHaptic(HapticFeedbackType.LIGHT_CLICK)
@@ -529,9 +563,9 @@ class GameViewModel(
         }
     }
 
-    fun buyBoosters(costCandies: Int, onPurchased: () -> Unit) {
+    fun buyBoosters(costDiamonds: Int, onPurchased: () -> Unit) {
         viewModelScope.launch {
-            if (repository?.spendCandies(costCandies) == true) {
+            if (repository?.spendDiamonds(costDiamonds) == true) {
                 onPurchased()
             }
         }
@@ -566,6 +600,18 @@ class GameViewModel(
                 triggerHaptic(HapticFeedbackType.VICTORY_FANFARE)
                 onSuccess()
             }
+        }
+    }
+
+    fun completeTutorial() {
+        viewModelScope.launch {
+            repository?.completeTutorial()
+        }
+    }
+
+    fun skipTutorial() {
+        viewModelScope.launch {
+            repository?.skipTutorial()
         }
     }
 

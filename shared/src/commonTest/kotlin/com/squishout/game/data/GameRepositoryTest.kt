@@ -92,14 +92,9 @@ class FakeUserSessionDao : UserSessionDao {
         session.value = newSession
     }
 
-    override suspend fun addCandies(amount: Int) {
+    override suspend fun addDiamonds(amount: Int) {
         val cur = session.value ?: UserSessionEntity()
-        session.value = cur.copy(candies = cur.candies + amount)
-    }
-
-    override suspend fun addGems(amount: Int) {
-        val cur = session.value ?: UserSessionEntity()
-        session.value = cur.copy(gems = cur.gems + amount)
+        session.value = cur.copy(diamonds = cur.diamonds + amount)
     }
 
     override suspend fun updateCurrentStage(stage: Int) {
@@ -140,6 +135,11 @@ class FakeUserSessionDao : UserSessionDao {
     override suspend fun updateClaimedMonthlyMilestones(claimed: String) {
         val cur = session.value ?: UserSessionEntity()
         session.value = cur.copy(claimedMonthlyMilestones = claimed)
+    }
+
+    override suspend fun updateHasCompletedTutorial(completed: Boolean) {
+        val cur = session.value ?: UserSessionEntity()
+        session.value = cur.copy(hasCompletedTutorial = completed)
     }
 }
 
@@ -184,8 +184,7 @@ class GameRepositoryTest {
     @Test
     fun testInitialSeeding() = runTest(testDispatcher) {
         val session = repository.session.value
-        assertEquals(150, session.candies)
-        assertEquals(15, session.gems)
+        assertEquals(50, session.diamonds)
         assertEquals(5, session.lives)
         assertEquals(1, session.currentStage)
         assertTrue(session.soundEnabled)
@@ -246,8 +245,8 @@ class GameRepositoryTest {
         )
         testScheduler.advanceUntilIdle()
 
-        // Candies should increase by 25 base + 3*15 = 70 (150 + 70 = 220)
-        assertEquals(220, repository.session.value.candies)
+        // Diamonds should increase by 10 base + 3*5 = 25 (50 + 25 = 75)
+        assertEquals(75, repository.session.value.diamonds)
         // Stage progression advances to 2
         assertEquals(2, repository.session.value.currentStage)
     }
@@ -268,18 +267,29 @@ class GameRepositoryTest {
         assertTrue(adRevive)
         assertEquals(1, repository.session.value.lives)
 
-        // Revive with gems (costs 10 gems)
-        val gemRevive = repository.reviveWithGems(10)
+        // Revive with diamonds (costs 10 diamonds)
+        val diamondRevive = repository.reviveWithDiamonds(10)
         testScheduler.advanceUntilIdle()
-        assertTrue(gemRevive)
+        assertTrue(diamondRevive)
         assertEquals(5, repository.session.value.lives)
-        assertEquals(5, repository.session.value.gems) // 15 - 10 = 5
+        assertEquals(40, repository.session.value.diamonds) // 50 - 10 = 40
 
-        // Another gem revive should fail because only 5 gems left
-        val secondGemRevive = repository.reviveWithGems(10)
+        // Spend remaining diamonds down to 5
+        repository.spendDiamonds(35)
         testScheduler.advanceUntilIdle()
-        assertFalse(secondGemRevive)
-        assertEquals(5, repository.session.value.gems)
+        assertEquals(5, repository.session.value.diamonds)
+
+        // Drain lives again
+        for (i in 0 until 5) {
+            repository.consumeLife(now)
+        }
+        testScheduler.advanceUntilIdle()
+
+        // Another diamond revive should fail because only 5 diamonds left
+        val secondDiamondRevive = repository.reviveWithDiamonds(10)
+        testScheduler.advanceUntilIdle()
+        assertFalse(secondDiamondRevive)
+        assertEquals(5, repository.session.value.diamonds)
     }
 
     @Test
@@ -287,17 +297,17 @@ class GameRepositoryTest {
         repository.equipSkin("blueberry_duo")
         testScheduler.advanceUntilIdle()
 
-        // Unlock lemon spark for 100 candies
-        val unlocked = repository.unlockSkin("lemon_spark", 100)
+        // Unlock lemon spark for 25 diamonds
+        val unlocked = repository.unlockSkin("lemon_spark", 25)
         testScheduler.advanceUntilIdle()
         assertTrue(unlocked)
-        assertEquals(50, repository.session.value.candies) // 150 - 100 = 50
+        assertEquals(25, repository.session.value.diamonds) // 50 - 25 = 25
 
-        // Attempting to spend 100 candies again should fail
-        val failedUnlock = repository.unlockSkin("grape_monarch", 100)
+        // Attempting to spend 30 diamonds should fail (only 25 left)
+        val failedUnlock = repository.unlockSkin("grape_monarch", 30)
         testScheduler.advanceUntilIdle()
         assertFalse(failedUnlock)
-        assertEquals(50, repository.session.value.candies)
+        assertEquals(25, repository.session.value.diamonds)
     }
 
     @Test
@@ -308,8 +318,8 @@ class GameRepositoryTest {
         testScheduler.advanceUntilIdle()
         assertNotNull(reward1)
         assertEquals(1, reward1.day)
-        assertEquals(50, reward1.candies)
-        assertEquals(200, repository.session.value.candies) // 150 + 50 = 200
+        assertEquals(15, reward1.diamonds)
+        assertEquals(65, repository.session.value.diamonds) // 50 + 15 = 65
 
         // Same day claim must return null
         val duplicateClaim = repository.claimDailyReward(day1Ms + 1000L)
@@ -342,20 +352,18 @@ class GameRepositoryTest {
     @Test
     fun testClaimStarChest() = runTest(testDispatcher) {
         testScheduler.advanceUntilIdle()
-        val milestone = STAR_CHEST_MILESTONES[0] // 15 stars, 100 candies, 10 gems
+        val milestone = STAR_CHEST_MILESTONES[0] // 15 stars, 25 diamonds
 
         // Fails if not enough stars
         val failed = repository.claimStarChest(milestone, totalStars = 10)
         assertFalse(failed)
 
         // Succeeds if total stars >= 15
-        val initialCandies = repository.session.value.candies
-        val initialGems = repository.session.value.gems
+        val initialDiamonds = repository.session.value.diamonds
         val claimed = repository.claimStarChest(milestone, totalStars = 15)
         testScheduler.advanceUntilIdle()
         assertTrue(claimed)
-        assertEquals(initialCandies + milestone.candies, repository.session.value.candies)
-        assertEquals(initialGems + milestone.gems, repository.session.value.gems)
+        assertEquals(initialDiamonds + milestone.diamonds, repository.session.value.diamonds)
         assertTrue(repository.session.value.claimedStarChests.contains("15"))
 
         // Cannot claim again
@@ -372,8 +380,7 @@ class GameRepositoryTest {
         val dayOfMonth1 = 9
         val monthKey1 = "2024-10"
 
-        val initialCandies = repository.session.value.candies
-        val initialGems = repository.session.value.gems
+        val initialDiamonds = repository.session.value.diamonds
 
         val success = repository.recordDailyPuzzleCompletion(
             epochDay = epochDay1,
@@ -387,8 +394,7 @@ class GameRepositoryTest {
         )
         testScheduler.advanceUntilIdle()
         assertTrue(success)
-        assertEquals(initialCandies + 100, repository.session.value.candies)
-        assertEquals(initialGems + 10, repository.session.value.gems)
+        assertEquals(initialDiamonds + 25, repository.session.value.diamonds)
         assertEquals(1, repository.session.value.dailyPuzzleStreak)
         assertEquals(epochDay1, repository.session.value.lastDailyPuzzleEpochDay)
 
@@ -418,11 +424,11 @@ class GameRepositoryTest {
         assertFalse(failedClaim)
 
         // Succeeds if completion count >= 5
-        val initialCandies = repository.session.value.candies
+        val initialDiamonds = repository.session.value.diamonds
         val successClaim = repository.claimMonthlyMilestone(monthKey, milestoneDays = 5, monthlyCompletionCount = 5)
         testScheduler.advanceUntilIdle()
         assertTrue(successClaim)
-        assertEquals(initialCandies + 150, repository.session.value.candies)
+        assertEquals(initialDiamonds + 50, repository.session.value.diamonds)
 
         // Duplicate claim fails
         val duplicateClaim = repository.claimMonthlyMilestone(monthKey, milestoneDays = 5, monthlyCompletionCount = 5)
@@ -436,5 +442,41 @@ class GameRepositoryTest {
         val cosmicSkin = repository.allSkins.firstOrNull()?.find { it.jellyId == "cosmic_nebula" }
         assertNotNull(cosmicSkin)
         assertTrue(cosmicSkin.isUnlocked)
+    }
+
+    @Test
+    fun testTutorialStateAndProgression() = runTest(testDispatcher) {
+        testScheduler.advanceUntilIdle()
+        // Default is not completed
+        assertFalse(repository.session.value.hasCompletedTutorial)
+
+        // Complete stage 1 completes tutorial
+        repository.recordLevelCompletion(
+            levelNumber = 1,
+            stars = 3,
+            score = 1000,
+            movesUsed = 5,
+            timestampEpoch = 123456L
+        )
+        testScheduler.advanceUntilIdle()
+        assertTrue(repository.session.value.hasCompletedTutorial)
+
+        // Reset and test skipTutorial
+        sessionDao.updateHasCompletedTutorial(false)
+        testScheduler.advanceUntilIdle()
+        assertFalse(repository.session.value.hasCompletedTutorial)
+
+        repository.skipTutorial()
+        testScheduler.advanceUntilIdle()
+        assertTrue(repository.session.value.hasCompletedTutorial)
+
+        // Reset and test completeTutorial
+        sessionDao.updateHasCompletedTutorial(false)
+        testScheduler.advanceUntilIdle()
+        assertFalse(repository.session.value.hasCompletedTutorial)
+
+        repository.completeTutorial()
+        testScheduler.advanceUntilIdle()
+        assertTrue(repository.session.value.hasCompletedTutorial)
     }
 }

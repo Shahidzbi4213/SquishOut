@@ -154,8 +154,7 @@ fun DailyPuzzleCalendarScreen(
             // 1. Screen Header (Back Button, Title, Streak Pill)
             CalendarTopHeader(
                 streakDays = session.dailyPuzzleStreak,
-                candies = session.candies,
-                gems = session.gems,
+                diamonds = session.diamonds,
                 onBack = onBack
             )
 
@@ -228,8 +227,7 @@ fun DailyPuzzleCalendarScreen(
 @Composable
 private fun CalendarTopHeader(
     streakDays: Int,
-    candies: Int,
-    gems: Int,
+    diamonds: Int,
     onBack: () -> Unit
 ) {
     Row(
@@ -297,38 +295,20 @@ private fun CalendarTopHeader(
             }
         }
 
-        // Economy Stats
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            // Candies
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White.copy(alpha = 0.85f))
-                    .border(1.dp, Color(0xFFE6D7C3), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 8.dp, vertical = 5.dp)
-            ) {
-                Text(
-                    text = "🍬 $candies",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = SlateCharcoal
-                )
-            }
-            // Gems
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White.copy(alpha = 0.85f))
-                    .border(1.dp, Color(0xFFE6D7C3), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 8.dp, vertical = 5.dp)
-            ) {
-                Text(
-                    text = "💎 $gems",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0369A1)
-                )
-            }
+        // Economy Stats (Diamonds)
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.White.copy(alpha = 0.85f))
+                .border(1.dp, Color(0xFFBAE6FD).copy(alpha = 0.70f), RoundedCornerShape(12.dp))
+                .padding(horizontal = 10.dp, vertical = 5.dp)
+        ) {
+            Text(
+                text = "💎 $diamonds",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Black,
+                color = Color(0xFF0284C7)
+            )
         }
     }
 }
@@ -639,7 +619,7 @@ private fun SelectedDayActionCard(
                     }
                     else -> {
                         ModalExtrudedButton(
-                            text = "▶ PLAY TODAY (+100 🍬 +10 💎)",
+                            text = "▶ PLAY TODAY (+25 💎)",
                             variant = ModalButtonVariant.EMERALD,
                             onClick = onPlay
                         )

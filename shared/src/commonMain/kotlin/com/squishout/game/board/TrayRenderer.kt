@@ -19,6 +19,17 @@ object TrayRenderer {
     private val scratchCrackPath = Path()
     private val scratchArrowPath = Path()
 
+    // Pre-allocated color lists and geometries for zero-allocation rendering
+    private val waterJetColors = listOf(Color(0xFFBAE6FD), Color(0xFF38BDF8), Color(0xFF0284C7))
+    private val fogBubbleColors = listOf(
+        Color(0xFFFFFFFF).copy(alpha = 0.92f),
+        Color(0xFFE0F2FE).copy(alpha = 0.88f),
+        Color(0xFFBAE6FD).copy(alpha = 0.82f)
+    )
+    private val fogRelativeOffsetsX = floatArrayOf(-0.5f, 0.5f, -0.3f, 0.4f, 0f)
+    private val fogRelativeOffsetsY = floatArrayOf(-0.4f, -0.3f, 0.45f, 0.4f, 0f)
+    private val fogRelativeRadii = floatArrayOf(0.75f, 0.80f, 0.85f, 0.78f, 0.95f)
+
     fun drawTray(
         drawScope: DrawScope,
         boardWidth: Int,
@@ -61,30 +72,37 @@ object TrayRenderer {
             )
 
             // 4. Recessed Inset Wells for Each Grid Slot
+            val wellRadius = tileSize * 0.16f
+            val shadowRadius = wellRadius + tileSize * 0.02f
+            val shadowOffsetY = tileSize * 0.015f
+            val pinDotRadius = tileSize * 0.035f
+            val shadowColor = biome.trayRimDark.copy(alpha = 0.25f)
+            val rimLight = biome.trayRimLight
+            val pinDotColor = biome.trayRimDark.copy(alpha = 0.4f)
+
             for (x in 0 until boardWidth) {
+                val cx = trayPadding + x * tileSize + tileSize / 2f
                 for (y in 0 until boardHeight) {
-                    val cx = trayPadding + x * tileSize + tileSize / 2f
                     val cy = trayPadding + y * tileSize + tileSize / 2f
-                    val wellRadius = tileSize * 0.16f
 
                     // Soft inner shadow ring
                     drawCircle(
-                        color = biome.trayRimDark.copy(alpha = 0.25f),
-                        radius = wellRadius + tileSize * 0.02f,
-                        center = Offset(cx, cy + tileSize * 0.015f)
+                        color = shadowColor,
+                        radius = shadowRadius,
+                        center = Offset(cx, cy + shadowOffsetY)
                     )
 
                     // Well center base
                     drawCircle(
-                        color = biome.trayRimLight,
+                        color = rimLight,
                         radius = wellRadius,
                         center = Offset(cx, cy)
                     )
 
                     // Tiny central pin dot
                     drawCircle(
-                        color = biome.trayRimDark.copy(alpha = 0.4f),
-                        radius = tileSize * 0.035f,
+                        color = pinDotColor,
+                        radius = pinDotRadius,
                         center = Offset(cx, cy)
                     )
                 }
@@ -282,7 +300,7 @@ object TrayRenderer {
             // 2. Swirling aqua water disc
             drawCircle(
                 brush = androidx.compose.ui.graphics.Brush.radialGradient(
-                    colors = listOf(Color(0xFFBAE6FD), Color(0xFF38BDF8), Color(0xFF0284C7)),
+                    colors = waterJetColors,
                     center = Offset(cx - r * 0.2f, cy - r * 0.2f),
                     radius = r * 1.1f
                 ),
@@ -335,40 +353,33 @@ object TrayRenderer {
 
         drawScope.apply {
             // Cluster of 5 overlapping pearlescent bubbles
-            val bubbles = listOf(
-                Offset(cx - r * 0.5f, cy - r * 0.4f) to r * 0.75f,
-                Offset(cx + r * 0.5f, cy - r * 0.3f) to r * 0.80f,
-                Offset(cx - r * 0.3f, cy + r * 0.45f) to r * 0.85f,
-                Offset(cx + r * 0.4f, cy + r * 0.4f) to r * 0.78f,
-                Offset(cx, cy) to r * 0.95f
-            )
+            val shadowOffsetY = tileSize * 0.02f
+            for (i in 0 until 5) {
+                val bubbleCenterX = cx + r * fogRelativeOffsetsX[i]
+                val bubbleCenterY = cy + r * fogRelativeOffsetsY[i]
+                val radius = r * fogRelativeRadii[i]
 
-            for ((center, radius) in bubbles) {
                 // Soft shadow
                 drawCircle(
                     color = Color.Black.copy(alpha = 0.08f),
                     radius = radius,
-                    center = Offset(center.x, center.y + tileSize * 0.02f)
+                    center = Offset(bubbleCenterX, bubbleCenterY + shadowOffsetY)
                 )
                 // Pearlescent bubble body
                 drawCircle(
                     brush = androidx.compose.ui.graphics.Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFFFFFFFF).copy(alpha = 0.92f),
-                            Color(0xFFE0F2FE).copy(alpha = 0.88f),
-                            Color(0xFFBAE6FD).copy(alpha = 0.82f)
-                        ),
-                        center = Offset(center.x - radius * 0.3f, center.y - radius * 0.3f),
+                        colors = fogBubbleColors,
+                        center = Offset(bubbleCenterX - radius * 0.3f, bubbleCenterY - radius * 0.3f),
                         radius = radius * 1.1f
                     ),
                     radius = radius,
-                    center = center
+                    center = Offset(bubbleCenterX, bubbleCenterY)
                 )
                 // Specular highlight arc
                 drawCircle(
                     color = Color.White.copy(alpha = 0.85f),
                     radius = radius * 0.28f,
-                    center = Offset(center.x - radius * 0.35f, center.y - radius * 0.35f)
+                    center = Offset(bubbleCenterX - radius * 0.35f, bubbleCenterY - radius * 0.35f)
                 )
             }
 

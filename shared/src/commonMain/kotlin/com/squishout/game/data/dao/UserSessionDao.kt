@@ -15,11 +15,8 @@ interface UserSessionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdate(session: UserSessionEntity)
 
-    @Query("UPDATE user_session SET candies = candies + :amount WHERE id = 1")
-    suspend fun addCandies(amount: Int)
-
-    @Query("UPDATE user_session SET gems = gems + :amount WHERE id = 1")
-    suspend fun addGems(amount: Int)
+    @Query("UPDATE user_session SET diamonds = diamonds + :amount WHERE id = 1")
+    suspend fun addDiamonds(amount: Int)
 
     @Query("UPDATE user_session SET currentStage = :stage WHERE id = 1")
     suspend fun updateCurrentStage(stage: Int)
@@ -44,4 +41,7 @@ interface UserSessionDao {
 
     @Query("UPDATE user_session SET claimedMonthlyMilestones = :claimed WHERE id = 1")
     suspend fun updateClaimedMonthlyMilestones(claimed: String)
+
+    @Query("UPDATE user_session SET hasCompletedTutorial = :completed WHERE id = 1")
+    suspend fun updateHasCompletedTutorial(completed: Boolean)
 }

@@ -74,7 +74,7 @@ import com.squishout.game.ui.components.ModalRestartIcon
 fun GameOverModal(
     isVisible: Boolean,
     onReviveWithAd: () -> Unit,
-    onReviveWithGems: () -> Unit,
+    onReviveWithDiamonds: () -> Unit,
     onRestart: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -209,12 +209,12 @@ fun GameOverModal(
                                 leadingIcon = { ModalPlayIcon() }
                             )
 
-                            // Gem Revive (10 Gems)
+                            // Diamond Revive (10 Diamonds)
                             ModalExtrudedButton(
-                                text = "REVIVE (10 GEMS)",
+                                text = "REVIVE (10 💎)",
                                 variant = ModalButtonVariant.CREAM,
-                                onClick = onReviveWithGems,
-                                leadingIcon = { GemFacetedIcon() }
+                                onClick = onReviveWithDiamonds,
+                                leadingIcon = { DiamondFacetedIcon() }
                             )
 
                             // Give Up & Restart
@@ -342,7 +342,7 @@ private fun DrawScope.drawBandAid(x: Float, y: Float, size: Float) {
 }
 
 @Composable
-private fun GemFacetedIcon() {
+private fun DiamondFacetedIcon() {
     Canvas(modifier = Modifier.size(18.dp)) {
         val w = size.width
         val h = size.height
@@ -358,7 +358,7 @@ private fun GemFacetedIcon() {
         drawPath(
             path = gemPath,
             brush = Brush.verticalGradient(
-                colors = listOf(Color(0xFF67E8F9), Color(0xFF06B6D4), Color(0xFF0891B2))
+                colors = listOf(Color(0xFFBAE6FD), Color(0xFF38BDF8), Color(0xFF0284C7))
             ),
             style = Fill
         )

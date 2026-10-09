@@ -20,7 +20,7 @@ import com.squishout.game.data.entity.UserSessionEntity
         UserSessionEntity::class,
         DailyPuzzleRecordEntity::class
     ],
-    version = 5
+    version = 7
 )
 @ConstructedBy(SquishDatabaseConstructor::class)
 abstract class SquishDatabase : RoomDatabase() {

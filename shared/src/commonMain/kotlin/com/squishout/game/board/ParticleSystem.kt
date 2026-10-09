@@ -156,6 +156,15 @@ class ParticleSystem(val maxParticles: Int = 180) {
         }
     }
 
+    companion object {
+        private val GOLD_COLORS = intArrayOf(
+            0xFFFFD700.toInt(), // Gold
+            0xFFFFA500.toInt(), // Orange Gold
+            0xFFFFF8DC.toInt(), // Shimmer White
+            0xFFFF69B4.toInt()  // Candy Pink
+        )
+    }
+
     /**
      * Spawns celebratory golden starburst particles for final jelly solve or booster activation.
      */
@@ -164,13 +173,6 @@ class ParticleSystem(val maxParticles: Int = 180) {
         originY: Float,
         count: Int = 22
     ) {
-        val goldColors = intArrayOf(
-            0xFFFFD700.toInt(), // Gold
-            0xFFFFA500.toInt(), // Orange Gold
-            0xFFFFF8DC.toInt(), // Shimmer White
-            0xFFFF69B4.toInt()  // Candy Pink
-        )
-
         for (i in 0 until count) {
             if (activeCount >= maxParticles) break
             val idx = activeCount++
@@ -189,7 +191,7 @@ class ParticleSystem(val maxParticles: Int = 180) {
             maxLife[idx] = duration
             size[idx] = Random.nextFloat() * 8f + 5f
             gravity[idx] = 200f
-            colors[idx] = goldColors[Random.nextInt(goldColors.size)]
+            colors[idx] = GOLD_COLORS[Random.nextInt(GOLD_COLORS.size)]
             shape[idx] = 1 // Diamond star sparkle
         }
     }

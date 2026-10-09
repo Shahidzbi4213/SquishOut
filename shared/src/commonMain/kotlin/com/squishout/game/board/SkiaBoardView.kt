@@ -1,6 +1,7 @@
 package com.squishout.game.board
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -17,8 +18,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -49,6 +52,7 @@ import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.squishout.engine.model.Board
@@ -79,7 +83,8 @@ fun SkiaBoardView(
     blockerRecoilsFlow: StateFlow<Map<Position, Float>>? = null,
     flyingRewardsFlow: StateFlow<List<FlyingRewardToken>>? = null,
     shatteredObstaclesFlow: StateFlow<List<Obstacle>>? = null,
-    comboCalloutFlow: StateFlow<String?>? = null
+    comboCalloutFlow: StateFlow<String?>? = null,
+    tutorialTargetJellyId: String? = null
 ) {
     val activeLaunches by (activeLaunchesFlow?.collectAsState() ?: remember { mutableStateOf(emptyList()) })
     val wobbleOffsets by (wobbleOffsetsFlow?.collectAsState() ?: remember { mutableStateOf(emptyMap()) })
@@ -366,7 +371,7 @@ fun SkiaBoardView(
                         tileSize = tileSize,
                         offsetX = wobbleX,
                         offsetY = wobbleY,
-                        isHighlighted = jelly.id == highlightedJellyId,
+                        isHighlighted = (jelly.id == highlightedJellyId) || (jelly.id == tutorialTargetJellyId),
                         animTimeSeconds = clockSeconds,
                         isPressed = isPressed,
                         wobbleOffset = wobble,
@@ -384,6 +389,37 @@ fun SkiaBoardView(
                             val palette = JellyRenderer.getPalette(jelly.type)
                             particleSystem.spawnCarbonationBubbles(jcx, jcy, palette.second, count = 2)
                         }
+                    }
+
+                    // Concentric pulsing golden tutorial halo for guided awake jelly
+                    if (jelly.id == tutorialTargetJellyId) {
+                        val jcx = trayPadding + minX * tileSize + tileSize / 2f
+                        val jcy = trayPadding + minY * tileSize + tileSize / 2f
+                        val pulse = (sin(clockSeconds * 6f) + 1f) / 2f
+                        val haloRadius = tileSize * (0.50f + pulse * 0.16f)
+                        val haloAlpha = (0.75f - pulse * 0.40f).coerceIn(0.15f, 0.85f)
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    SquishColors.StarGold.copy(alpha = haloAlpha),
+                                    Color(0xFFFFB703).copy(alpha = haloAlpha * 0.4f),
+                                    Color.Transparent
+                                ),
+                                center = Offset(jcx, jcy),
+                                radius = haloRadius * 1.35f
+                            ),
+                            radius = haloRadius * 1.35f,
+                            center = Offset(jcx, jcy)
+                        )
+                        drawCircle(
+                            color = SquishColors.StarGold.copy(alpha = haloAlpha),
+                            radius = haloRadius,
+                            center = Offset(jcx, jcy),
+                            style = Stroke(
+                                width = 3.dp.toPx(),
+                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f), clockSeconds * 20f)
+                            )
+                        )
                     }
                 }
 
@@ -547,37 +583,47 @@ fun SkiaBoardView(
                 TrayRenderer.drawFogTile(this, topLeft, tileSize)
             }
 
-            // 8. Draw Flying Reward Tokens (Stars & Candies Arcing via Quadratic Bezier)
+            // 8. Draw Flying Reward Tokens (Diamonds 💎 Arcing via Quadratic Bezier)
             for (token in currentRewards) {
                 val pos = token.currentPosition()
                 val tokenScale = token.scale
-                val starRadius = tileSize * 0.22f * tokenScale
+                val diamondRadius = tileSize * 0.24f * tokenScale
 
-                // Golden Glow Halo
+                // Cyan/Azure Gem Glow Halo
                 drawCircle(
-                    color = SquishColors.StarGold.copy(alpha = 0.4f),
-                    radius = starRadius * 1.5f,
+                    color = Color(0xFF38BDF8).copy(alpha = 0.45f),
+                    radius = diamondRadius * 1.5f,
                     center = pos
                 )
 
-                // 4-Point Golden Star Path
+                // Faceted Gem Diamond Path (Brilliant cut silhouette)
+                val dw = diamondRadius
+                val dh = diamondRadius * 1.15f
                 val sPath = scratchRewardStarPath.apply {
                     reset()
-                    moveTo(pos.x, pos.y - starRadius)
-                    quadraticTo(pos.x, pos.y, pos.x + starRadius, pos.y)
-                    quadraticTo(pos.x, pos.y, pos.x, pos.y + starRadius)
-                    quadraticTo(pos.x, pos.y, pos.x - starRadius, pos.y)
-                    quadraticTo(pos.x, pos.y, pos.x, pos.y - starRadius)
+                    moveTo(pos.x - dw * 0.55f, pos.y - dh * 0.50f)
+                    lineTo(pos.x + dw * 0.55f, pos.y - dh * 0.50f)
+                    lineTo(pos.x + dw * 0.95f, pos.y - dh * 0.10f)
+                    lineTo(pos.x, pos.y + dh * 0.75f)
+                    lineTo(pos.x - dw * 0.95f, pos.y - dh * 0.10f)
                     close()
                 }
-                drawPath(sPath, color = SquishColors.StarGold, style = Fill)
-                drawPath(sPath, color = Color.White, style = Stroke(width = 2.5f))
+                drawPath(
+                    sPath,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color(0xFFBAE6FD), Color(0xFF38BDF8), Color(0xFF0284C7)),
+                        startY = pos.y - dh,
+                        endY = pos.y + dh
+                    ),
+                    style = Fill
+                )
+                drawPath(sPath, color = Color.White.copy(alpha = 0.85f), style = Stroke(width = 2.0f))
 
-                // Sparkle Core
+                // Diamond Sparkle Core
                 drawCircle(
-                    color = Color.White.copy(alpha = 0.9f),
-                    radius = starRadius * 0.35f,
-                    center = pos
+                    color = Color.White.copy(alpha = 0.95f),
+                    radius = diamondRadius * 0.25f,
+                    center = Offset(pos.x - dw * 0.2f, pos.y - dh * 0.25f)
                 )
             }
 
@@ -621,6 +667,93 @@ fun SkiaBoardView(
                         shadow = Shadow(Color.Black.copy(alpha = 0.45f), Offset(1f, 2f), 3f)
                     )
                 )
+            }
+        }
+
+        // 9. Floating Tutorial Pointer Indicator (Touch-transparent so taps go straight to the board)
+        if (tutorialTargetJellyId != null) {
+            val targetJelly = board.getJellyById(tutorialTargetJellyId)
+            if (targetJelly != null) {
+                val minX = targetJelly.tiles.minOf { it.x }
+                val minY = targetJelly.tiles.minOf { it.y }
+                val maxX = targetJelly.tiles.maxOf { it.x }
+                val maxY = targetJelly.tiles.maxOf { it.y }
+                val jcx = trayPadding + (minX + maxX + 1) * tileSize / 2f
+                val jcy = trayPadding + (minY + maxY + 1) * tileSize / 2f
+
+                val pointDown = minY > 0
+                val pointerTransition = rememberInfiniteTransition(label = "TutorialPointer")
+                val bounceY by pointerTransition.animateFloat(
+                    initialValue = if (pointDown) -8f else 8f,
+                    targetValue = if (pointDown) 4f else -4f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(600, easing = FastOutSlowInEasing),
+                        repeatMode = RepeatMode.Reverse
+                    ),
+                    label = "PointerBounce"
+                )
+
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .offset {
+                            val targetYOffset = if (pointDown) {
+                                jcy - tileSize * 0.90f + bounceY.dp.toPx()
+                            } else {
+                                jcy + tileSize * 0.40f + bounceY.dp.toPx()
+                            }
+                            IntOffset(
+                                x = (jcx - 24.dp.toPx()).toInt(),
+                                y = targetYOffset.toInt()
+                            )
+                        }
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        if (pointDown) {
+                            Box(
+                                modifier = Modifier
+                                    .shadow(4.dp, RoundedCornerShape(10.dp))
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFFFFB703))
+                                    .border(1.5.dp, Color.White, RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "TAP!",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color(0xFF6D4321)
+                                )
+                            }
+                            Text(
+                                text = "👇",
+                                fontSize = 26.sp
+                            )
+                        } else {
+                            Text(
+                                text = "👆",
+                                fontSize = 26.sp
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .shadow(4.dp, RoundedCornerShape(10.dp))
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFFFFB703))
+                                    .border(1.5.dp, Color.White, RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "TAP!",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color(0xFF6D4321)
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }

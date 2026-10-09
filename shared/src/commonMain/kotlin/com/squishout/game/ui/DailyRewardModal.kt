@@ -328,10 +328,7 @@ private fun DailyRewardDayCard(
                 isClaimed -> {
                     Text(text = "✓", fontSize = 18.sp, fontWeight = FontWeight.Black, color = EmeraldMint)
                 }
-                reward.candies > 0 -> {
-                    Text(text = "🍬", fontSize = 18.sp)
-                }
-                reward.gems > 0 -> {
+                reward.diamonds > 0 -> {
                     Text(text = "💎", fontSize = 18.sp)
                 }
                 reward.lives > 0 -> {
@@ -342,8 +339,7 @@ private fun DailyRewardDayCard(
             Text(
                 text = when {
                     isClaimed -> "Claimed"
-                    reward.candies > 0 -> "+${reward.candies}"
-                    reward.gems > 0 -> "+${reward.gems}"
+                    reward.diamonds > 0 -> "+${reward.diamonds}"
                     reward.lives > 0 -> "+${reward.lives}"
                     else -> ""
                 },
@@ -402,7 +398,7 @@ private fun DailyMegaBoxCard(
                         color = if (isClaimed) Color(0xFF64748B) else Color(0xFF78350F)
                     )
                     Text(
-                        text = "500 🍬 + 25 💎 + All Boosters!",
+                        text = "+150 💎 + All Boosters!",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (isClaimed) Color(0xFF94A3B8) else Color(0xFF92400E)

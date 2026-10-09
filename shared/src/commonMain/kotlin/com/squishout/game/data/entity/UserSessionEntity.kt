@@ -6,8 +6,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "user_session")
 data class UserSessionEntity(
     @PrimaryKey val id: Int = 1,
-    val candies: Int = 100,
-    val gems: Int = 10,
+    val diamonds: Int = 50,
     val lives: Int = 5,
     val maxLives: Int = 5,
     val lastLifeRefillEpoch: Long = 0L,
@@ -20,5 +19,6 @@ data class UserSessionEntity(
     val claimedStarChests: String = "",
     val dailyPuzzleStreak: Int = 0,
     val lastDailyPuzzleEpochDay: Long = 0L,
-    val claimedMonthlyMilestones: String = ""
+    val claimedMonthlyMilestones: String = "",
+    val hasCompletedTutorial: Boolean = false
 )

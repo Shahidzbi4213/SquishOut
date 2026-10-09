@@ -77,7 +77,7 @@ fun VictoryModal(
     onReplay: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val bonusCandies = (score / 40).coerceIn(150, 450)
+    val bonusDiamonds = 10 + (stars * 5)
 
     Box(
         modifier = modifier
@@ -180,10 +180,10 @@ fun VictoryModal(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Score & Jelly Bonus Capsule (Recessed Soft Cream Card)
+                        // Score & Diamond Reward Capsule (Recessed Soft Cream Card)
                         ScoreAndBonusCapsule(
                             score = score,
-                            bonusCandies = bonusCandies
+                            bonusDiamonds = bonusDiamonds
                         )
 
                         Spacer(modifier = Modifier.height(18.dp))
@@ -562,13 +562,13 @@ private fun CelebratoryMascotHero(
 }
 
 /* =========================================================================
-   SCORE & JELLY BONUS CAPSULE (Recessed Soft Cream Card)
+   SCORE & DIAMOND REWARD CAPSULE (Recessed Soft Cream Card)
    ========================================================================= */
 
 @Composable
 private fun ScoreAndBonusCapsule(
     score: Int,
-    bonusCandies: Int,
+    bonusDiamonds: Int,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -630,7 +630,7 @@ private fun ScoreAndBonusCapsule(
                     .background(Color(0xFFFED7AA).copy(alpha = 0.40f))
             )
 
-            // ROW 2: Jelly Bonus
+            // ROW 2: Diamond Reward
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -640,22 +640,22 @@ private fun ScoreAndBonusCapsule(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text(text = "🎉", fontSize = 16.sp)
+                    Text(text = "💎", fontSize = 16.sp)
                     Text(
-                        text = "Jelly Bonus",
+                        text = "Diamond Reward",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF6C757D)
                     )
                 }
 
-                // Raised Candy Pill Badge
+                // Raised Diamond Pill Badge
                 Box(
                     modifier = Modifier
                         .shadow(2.dp, RoundedCornerShape(12.dp))
                         .clip(RoundedCornerShape(12.dp))
                         .background(Color.White)
-                        .border(1.dp, Color(0xFFFED7AA).copy(alpha = 0.50f), RoundedCornerShape(12.dp))
+                        .border(1.dp, Color(0xFFBAE6FD).copy(alpha = 0.60f), RoundedCornerShape(12.dp))
                         .padding(horizontal = 8.dp, vertical = 3.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -664,13 +664,13 @@ private fun ScoreAndBonusCapsule(
                         horizontalArrangement = Arrangement.spacedBy(3.dp)
                     ) {
                         Text(
-                            text = "+$bonusCandies",
+                            text = "+$bonusDiamonds",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Black,
-                            color = Color(0xFFC2410C)
+                            color = Color(0xFF0284C7)
                         )
                         Text(
-                            text = "🍬",
+                            text = "💎",
                             fontSize = 14.sp
                         )
                     }
