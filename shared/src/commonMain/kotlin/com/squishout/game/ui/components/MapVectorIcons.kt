@@ -414,7 +414,7 @@ fun CanvasGiftChest(
 
 @Composable
 fun Canvas3DStar(
-    isEarned: Boolean,
+    isEarned: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     Canvas(modifier = modifier) {

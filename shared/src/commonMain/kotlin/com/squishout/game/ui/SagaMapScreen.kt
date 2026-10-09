@@ -35,7 +35,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,6 +65,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.squishout.game.data.entity.LevelRecordEntity
 import com.squishout.game.data.entity.UserSessionEntity
+import com.squishout.game.data.repository.STAR_CHEST_MILESTONES
+import com.squishout.game.data.repository.StarChestMilestone
+import com.squishout.game.ui.StarChestModal
 import com.squishout.game.ui.components.Canvas3DStar
 import com.squishout.game.ui.components.CanvasCandyCitadel
 import com.squishout.game.ui.components.CanvasGiftChest
@@ -97,11 +102,24 @@ fun SagaMapScreen(
     onNavigateToShop: () -> Unit = {},
     onOpenDailyReward: () -> Unit = {},
     canClaimDaily: Boolean = false,
+    onClaimStarChest: (StarChestMilestone) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val totalStages = 150
     val recordMap = levelRecords.associateBy { it.levelNumber }
     val currentUnlocked = session.currentStage.coerceAtMost(totalStages)
+
+    val totalStars = remember(levelRecords) { levelRecords.sumOf { it.stars } }
+    val claimedSet = remember(session.claimedStarChests) {
+        session.claimedStarChests.split(",").filter { it.isNotBlank() }.toSet()
+    }
+    val hasClaimableStarChest = remember(totalStars, claimedSet) {
+        STAR_CHEST_MILESTONES.any { totalStars >= it.requiredStars && !claimedSet.contains(it.requiredStars.toString()) }
+    }
+    val nextMilestone = remember(totalStars, claimedSet) {
+        STAR_CHEST_MILESTONES.firstOrNull { !claimedSet.contains(it.requiredStars.toString()) } ?: STAR_CHEST_MILESTONES.last()
+    }
+    var activeStarChestMilestone by remember { mutableStateOf<StarChestMilestone?>(null) }
 
     val stages = (1..totalStages).map { stageNum ->
         val record = recordMap[stageNum]
@@ -159,6 +177,9 @@ fun SagaMapScreen(
             // 1. Pinned Top Arcade HUD
             SagaHeader(
                 session = session,
+                totalStars = totalStars,
+                hasClaimableStarChest = hasClaimableStarChest,
+                onOpenStarMilestone = { activeStarChestMilestone = nextMilestone },
                 onOpenDailyReward = onOpenDailyReward,
                 canClaimDaily = canClaimDaily,
                 onOpenShop = onNavigateToShop
@@ -241,8 +262,19 @@ fun SagaMapScreen(
                                     .then(if (stage.isCurrent) Modifier.zIndex(3f) else Modifier.zIndex(1f))
                             )
 
-                            // Decorative roadside candy props along the journey
-                            RoadsideCandyDecorations(stageNumber = stage.stageNumber)
+                            // Roadside decorations: Star Chest milestone if this stage anchors one, else candy props
+                            val starMilestone = STAR_CHEST_MILESTONES.firstOrNull { it.stageAnchor == stage.stageNumber }
+                            if (starMilestone != null) {
+                                RoadsideStarMilestoneChest(
+                                    milestone = starMilestone,
+                                    stageNumber = stage.stageNumber,
+                                    isClaimed = claimedSet.contains(starMilestone.requiredStars.toString()),
+                                    canClaim = totalStars >= starMilestone.requiredStars,
+                                    onClick = { activeStarChestMilestone = starMilestone }
+                                )
+                            } else {
+                                RoadsideCandyDecorations(stageNumber = stage.stageNumber)
+                            }
                         }
                     }
 
@@ -268,6 +300,19 @@ fun SagaMapScreen(
                 onShopClick = onNavigateToShop
             )
         }
+
+        // 4. Star Chest Milestone Loot Claim Modal
+        StarChestModal(
+            milestone = activeStarChestMilestone,
+            totalStars = totalStars,
+            isClaimed = activeStarChestMilestone?.let { claimedSet.contains(it.requiredStars.toString()) } ?: false,
+            onClaim = {
+                activeStarChestMilestone?.let { milestone ->
+                    onClaimStarChest(milestone)
+                }
+            },
+            onDismiss = { activeStarChestMilestone = null }
+        )
     }
 }
 
@@ -285,6 +330,9 @@ private fun calculateStageXOffset(stageNum: Int): Dp {
 @Composable
 private fun SagaHeader(
     session: UserSessionEntity,
+    totalStars: Int = 0,
+    hasClaimableStarChest: Boolean = false,
+    onOpenStarMilestone: () -> Unit = {},
     onOpenDailyReward: () -> Unit = {},
     canClaimDaily: Boolean = false,
     onOpenShop: () -> Unit = {}
@@ -316,15 +364,21 @@ private fun SagaHeader(
             // CENTER: Candy Currency Pill (Swirl Candy + Gold Numbers + Emerald '+')
             CandyCurrencyPill(candies = session.candies, onClick = onOpenShop)
 
-            // RIGHT: Hearts Capsule ("5/5" + Ruby Heart) & Bouncing Daily Gift Chest
+            // RIGHT: Hearts Capsule, Star Chest Milestone & Bouncing Daily Gift Chest
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 HeartsPill(
                     lives = session.lives,
                     maxLives = session.maxLives,
                     onClick = onOpenShop
+                )
+
+                StarChestButton(
+                    totalStars = totalStars,
+                    hasClaimable = hasClaimableStarChest,
+                    onClick = onOpenStarMilestone
                 )
 
                 DailyGiftButton(
@@ -585,6 +639,74 @@ private fun DailyGiftButton(canClaim: Boolean, onClick: () -> Unit) {
     }
 }
 
+@Composable
+private fun StarChestButton(
+    totalStars: Int,
+    hasClaimable: Boolean,
+    onClick: () -> Unit
+) {
+    val infiniteTransition = rememberInfiniteTransition()
+    val bounceOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = if (hasClaimable) -4f else 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    Box(
+        modifier = Modifier
+            .offset(y = bounceOffset.dp)
+            .height(38.dp)
+            .shadow(4.dp, RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(14.dp))
+            .background(
+                Brush.verticalGradient(
+                    if (hasClaimable) {
+                        listOf(Color(0xFFFFE380), Color(0xFFFFB703), Color(0xFFE07A00))
+                    } else {
+                        listOf(Color(0xFFFFFDF5), Color(0xFFF3E7D7))
+                    }
+                )
+            )
+            .border(
+                1.dp,
+                if (hasClaimable) Color(0xFFFFFBD6) else Color(0xFFE6D7C3),
+                RoundedCornerShape(14.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 7.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Canvas3DStar(modifier = Modifier.size(13.dp))
+            Text(
+                text = "$totalStars",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Black,
+                color = if (hasClaimable) Color(0xFF78350F) else Color(0xFF854D0E)
+            )
+        }
+
+        if (hasClaimable) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 3.dp, y = (-2).dp)
+                    .size(9.dp)
+                    .shadow(2.dp, CircleShape)
+                    .clip(CircleShape)
+                    .background(Color(0xFFE63946))
+                    .border(1.dp, Color.White, CircleShape)
+            )
+        }
+    }
+}
+
 /* =========================================================================
    3D WINDING COOKIE-WAFER PATH
    ========================================================================= */
@@ -749,6 +871,127 @@ private fun RoadsideCandyDecorations(stageNumber: Int) {
             propType = stageNumber % 5,
             modifier = Modifier.fillMaxSize()
         )
+    }
+}
+
+/**
+ * 3D Star Chest Milestone pedestal placed along the roadside at milestone stage anchors.
+ */
+@Composable
+private fun RoadsideStarMilestoneChest(
+    milestone: StarChestMilestone,
+    stageNumber: Int,
+    isClaimed: Boolean,
+    canClaim: Boolean,
+    onClick: () -> Unit
+) {
+    val xOffset = calculateStageXOffset(stageNumber)
+    val decorationX = if (xOffset >= 0.dp) {
+        (-120).dp + (sin(stageNumber * 1.5f) * 10f).dp
+    } else {
+        120.dp + (sin(stageNumber * 1.5f) * 10f).dp
+    }
+
+    val infiniteTransition = rememberInfiniteTransition()
+    val bounceY by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = if (canClaim && !isClaimed) -6f else 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(700, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    Column(
+        modifier = Modifier
+            .offset(x = decorationX, y = bounceY.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            ),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Milestone Star Badge
+        Box(
+            modifier = Modifier
+                .shadow(3.dp, RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(8.dp))
+                .background(
+                    if (isClaimed) Color(0xFF059669)
+                    else if (canClaim) Color(0xFFD97706)
+                    else Color(0xFF78572A)
+                )
+                .padding(horizontal = 6.dp, vertical = 2.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Canvas3DStar(modifier = Modifier.size(10.dp))
+                Text(
+                    text = "${milestone.requiredStars}",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(3.dp))
+
+        // 3D Chest with Pedestal
+        Box(
+            modifier = Modifier
+                .size(46.dp)
+                .shadow(
+                    elevation = if (canClaim && !isClaimed) 8.dp else 4.dp,
+                    shape = RoundedCornerShape(14.dp),
+                    spotColor = if (canClaim && !isClaimed) Color(0xFFF59E0B) else Color(0x40000000)
+                )
+                .clip(RoundedCornerShape(14.dp))
+                .background(
+                    Brush.verticalGradient(
+                        if (isClaimed) listOf(Color(0xFFE2E8F0), Color(0xFFCBD5E1))
+                        else if (canClaim) listOf(Color(0xFFFFF3B0), Color(0xFFFFC043), Color(0xFFE07A00))
+                        else listOf(Color(0xFFFFFDF8), Color(0xFFF1E3D3))
+                    )
+                )
+                .border(
+                    1.5.dp,
+                    if (canClaim && !isClaimed) Color(0xFFFFE066) else Color(0xFFE2D6C5),
+                    RoundedCornerShape(14.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            CanvasGiftChest(
+                canClaim = canClaim && !isClaimed,
+                modifier = Modifier.size(28.dp)
+            )
+
+            if (canClaim && !isClaimed) {
+                // Glowing pip
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 2.dp, y = (-2).dp)
+                        .size(10.dp)
+                        .shadow(2.dp, CircleShape)
+                        .clip(CircleShape)
+                        .background(Color(0xFFE63946))
+                        .border(1.5.dp, Color.White, CircleShape)
+                )
+            } else if (isClaimed) {
+                // Checkmark badge
+                Text(
+                    text = "✓",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF059669),
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(end = 2.dp, bottom = 2.dp)
+                )
+            }
+        }
     }
 }
 

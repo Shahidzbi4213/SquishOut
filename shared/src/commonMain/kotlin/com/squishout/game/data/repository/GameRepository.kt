@@ -305,7 +305,44 @@ class GameRepository(
         val currentDay = currentEpochMs / (24 * 60 * 60 * 1000L)
         return currentDay != currentSession.lastClaimEpochDay
     }
+
+    suspend fun claimStarChest(milestone: StarChestMilestone, totalStars: Int): Boolean {
+        if (totalStars < milestone.requiredStars) return false
+        val currentSession = sessionDao.getSession().firstOrNull() ?: return false
+        val claimedList = currentSession.claimedStarChests.split(",").filter { it.isNotBlank() }.toMutableSet()
+        val key = milestone.requiredStars.toString()
+        if (claimedList.contains(key)) return false // Already claimed
+
+        claimedList.add(key)
+        sessionDao.insertOrUpdate(
+            currentSession.copy(
+                candies = currentSession.candies + milestone.candies,
+                gems = currentSession.gems + milestone.gems,
+                claimedStarChests = claimedList.joinToString(",")
+            )
+        )
+        return true
+    }
 }
+
+data class StarChestMilestone(
+    val requiredStars: Int,
+    val stageAnchor: Int,
+    val candies: Int,
+    val gems: Int,
+    val hintBoosters: Int = 0,
+    val undoBoosters: Int = 0,
+    val wandBoosters: Int = 0
+)
+
+val STAR_CHEST_MILESTONES = listOf(
+    StarChestMilestone(requiredStars = 15, stageAnchor = 10, candies = 100, gems = 10, hintBoosters = 1),
+    StarChestMilestone(requiredStars = 30, stageAnchor = 20, candies = 150, gems = 15, wandBoosters = 1),
+    StarChestMilestone(requiredStars = 50, stageAnchor = 35, candies = 200, gems = 20, undoBoosters = 2),
+    StarChestMilestone(requiredStars = 75, stageAnchor = 50, candies = 250, gems = 25, hintBoosters = 2),
+    StarChestMilestone(requiredStars = 100, stageAnchor = 70, candies = 350, gems = 35, wandBoosters = 2),
+    StarChestMilestone(requiredStars = 150, stageAnchor = 100, candies = 500, gems = 50, hintBoosters = 2, undoBoosters = 2, wandBoosters = 2)
+)
 
 data class DailyReward(
     val day: Int,

@@ -1,0 +1,198 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 4,
+    "identityHash": "2aa5662a5143e64d71a4476206b45ef7",
+    "entities": [
+      {
+        "tableName": "level_records",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`levelNumber` INTEGER NOT NULL, `stars` INTEGER NOT NULL, `highScore` INTEGER NOT NULL, `movesUsed` INTEGER NOT NULL, `completedAt` INTEGER NOT NULL, PRIMARY KEY(`levelNumber`))",
+        "fields": [
+          {
+            "fieldPath": "levelNumber",
+            "columnName": "levelNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stars",
+            "columnName": "stars",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "highScore",
+            "columnName": "highScore",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "movesUsed",
+            "columnName": "movesUsed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completedAt",
+            "columnName": "completedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "levelNumber"
+          ]
+        }
+      },
+      {
+        "tableName": "jelly_skins",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`jellyId` TEXT NOT NULL, `name` TEXT NOT NULL, `rarity` TEXT NOT NULL, `isUnlocked` INTEGER NOT NULL, `level` INTEGER NOT NULL, `isEquipped` INTEGER NOT NULL, `perkDescription` TEXT, PRIMARY KEY(`jellyId`))",
+        "fields": [
+          {
+            "fieldPath": "jellyId",
+            "columnName": "jellyId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rarity",
+            "columnName": "rarity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isUnlocked",
+            "columnName": "isUnlocked",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "level",
+            "columnName": "level",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isEquipped",
+            "columnName": "isEquipped",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "perkDescription",
+            "columnName": "perkDescription",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "jellyId"
+          ]
+        }
+      },
+      {
+        "tableName": "user_session",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `candies` INTEGER NOT NULL, `gems` INTEGER NOT NULL, `lives` INTEGER NOT NULL, `maxLives` INTEGER NOT NULL, `lastLifeRefillEpoch` INTEGER NOT NULL, `currentStage` INTEGER NOT NULL, `soundEnabled` INTEGER NOT NULL, `musicEnabled` INTEGER NOT NULL, `hapticsEnabled` INTEGER NOT NULL, `loginStreakDays` INTEGER NOT NULL, `lastClaimEpochDay` INTEGER NOT NULL, `claimedStarChests` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "candies",
+            "columnName": "candies",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gems",
+            "columnName": "gems",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lives",
+            "columnName": "lives",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxLives",
+            "columnName": "maxLives",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastLifeRefillEpoch",
+            "columnName": "lastLifeRefillEpoch",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentStage",
+            "columnName": "currentStage",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "soundEnabled",
+            "columnName": "soundEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "musicEnabled",
+            "columnName": "musicEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hapticsEnabled",
+            "columnName": "hapticsEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "loginStreakDays",
+            "columnName": "loginStreakDays",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastClaimEpochDay",
+            "columnName": "lastClaimEpochDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "claimedStarChests",
+            "columnName": "claimedStarChests",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2aa5662a5143e64d71a4476206b45ef7')"
+    ]
+  }
+}

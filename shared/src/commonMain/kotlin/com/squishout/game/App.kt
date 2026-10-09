@@ -83,7 +83,11 @@ fun App() {
                             onOpenDailyReward = {
                                 isDailyRewardOpen = true
                             },
-                            canClaimDaily = canClaimDaily
+                            canClaimDaily = canClaimDaily,
+                            onClaimStarChest = { milestone ->
+                                val totalStars = levels.sumOf { it.stars }
+                                viewModel.claimStarChest(milestone, totalStars)
+                            }
                         )
                     }
 
