@@ -1,104 +1,179 @@
-# 🍓 Squish Out — Kawaii Directional Unblocking Puzzle
+<div align="center">
 
-[![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-2.4.20-7F52FF.svg?logo=kotlin)](https://kotlinlang.org/)
-[![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-1.12.1-4285F4.svg?logo=jetpackcompose)](https://www.jetbrains.com/lp/compose-multiplatform/)
-[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-brightgreen.svg)]()
-[![Database](https://img.shields.io/badge/Room%20KMP-2.8.5-34A853.svg?logo=sqlite)](https://developer.android.com/kotlin/multiplatform/room)
-[![DI](https://img.shields.io/badge/Koin-4.2.2-FF5722.svg)](https://insert-koin.io/)
-[![Tests](https://img.shields.io/badge/Tests-100%25%20Passing-success.svg)]()
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+  <img src="assets/banner.svg" alt="Squish Out Banner" width="100%" />
 
-> A vibrant, juicy evolution of classic directional unblocking puzzles (like *Arrow Puzzle*). Replace cold abstract arrows with playful, translucent gelatin blobs (**"Squishies"**) featuring multi-stop radial gloss shaders, expressive eye states, squish-and-stretch launch physics, and a rich metagame.
+  <br />
 
----
+  [![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin_Multiplatform-2.4.20-7F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
+  [![Compose Multiplatform](https://img.shields.io/badge/Compose_Multiplatform-1.12.1-4285F4.svg?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://www.jetbrains.com/lp/compose-multiplatform/)
+  [![Platforms](https://img.shields.io/badge/Platforms-Android_%7C_iOS-00C853.svg?style=for-the-badge&logo=apple&logoColor=white)]()
+  [![Room KMP](https://img.shields.io/badge/Room_KMP-2.8.5-34A853.svg?style=for-the-badge&logo=sqlite&logoColor=white)](https://developer.android.com/kotlin/multiplatform/room)
+  [![Tests](https://img.shields.io/badge/Tests-100%25_Passing-10B981.svg?style=for-the-badge&logo=githubactions&logoColor=white)]()
+  [![License](https://img.shields.io/badge/License-MIT-3B82F6.svg?style=for-the-badge)](LICENSE)
 
-## ✨ Features
+  <p align="center">
+    <strong>🍓 A juicy, tactile evolution of directional unblocking puzzles.</strong><br />
+    Replace cold, sterile arrows with living, breathing kawaii gelatin blobs featuring dynamic radial gloss shaders, expressive eyelid states, squish-and-stretch launch physics, and a rich 150-stage saga metagame.
+  </p>
 
-- **🍓 Tactile Gummy Jelly Physics & Shaders**:
-  - Translucent multi-stop radial gloss gradients with white specular arcs.
-  - Expressive eyelid states: awake star-sparkling pupils `( ✦‿✦ )` when an exit path is clear, sleepy curved lids `( ˘◡˘ )` when obstructed.
-  - Directional teardrop crown/snouts indicating escape vectors.
-  - Sinusoidal refusal wobbles on blocked taps and smooth squish-and-stretch tweens on launch.
-- **🧩 Mathematical Reverse-Assembly Solver**:
-  - Pure zero-dependency grid engine (`:core-engine`) guaranteeing **100% solvable boards**.
-  - Dynamic reverse-slide puzzle generation with calibrated difficulty curves across 50 stages.
-  - Multi-tile pieces (1x1 blobs and 1x2 Grape Eel Duo).
-  - Raycasting exit path detection and greedy solver verification.
-- **🏔️ Dynamic Biome Themes & Boss Obstacles**:
-  - Distinct ambient themes for *Sweet Meadow* (1–20), *Soda Lagoon* (21–40), and *Honeycomb Valley* (41+).
-  - Tray floor, porcelain rim borders, and ambient gradients dynamically adapt per biome.
-  - Interactive obstacles: *Mountain Rock*, *Sweet Meadow Tree*, *Frosted Ice Cube* (2 HP with Skia fracture crack lines), and *Honey Pot* (1 HP with dripping glaze).
-  - Launching jellies shatter adjacent obstacles, waking up trapped jellies and awarding bonus score.
-- **📳 Multi-Tier Haptics & Procedural Audio Engine**:
-  - Zero-asset procedural 16-bit PCM audio synthesis (`POP`, `WOBBLE`, `VICTORY`, `BOOSTER`, `CRACK`).
-  - Typed multi-tier haptic feedback patterns:
-    - `LIGHT_CLICK` (25ms) for standard unblock launch.
-    - `ERROR_WOBBLE` (80ms) for blocked taps.
-    - `CRACK_THUMP` (double pulse waveform) for obstacle fractures.
-    - `VICTORY_FANFARE` (triplet waveform / native Apple success) on stage completion.
-- **📱 Responsive Adaptive Layout & High-DPI Scaling**:
-  - Letterboxed aspect-ratio constraints (`widthIn(max = ...)`) across game canvas, saga map, and modals.
-  - Pixel-perfect Skia Canvas vector rendering with zero bitmap pixelation on Retina and high-DPI displays.
-  - Foldable and tablet-optimized ergonomic booster docks.
-- **🗺️ Saga Progression Map & Daily Streak**:
-  - Vertical winding stepping-stone map featuring 50 handcrafted stages.
-  - 7-day daily login streak calendar with escalating Candies, Gems, and Day 7 Mega Box.
-  - Active stage marker with crowned mascot pin and `PLAY! ▶` pulsing badge.
-- **🐾 Jelly Dex & Companion Showcase**:
-  - Hero mascot spotlight with floating pedestal glow and perk descriptions.
-  - Collectible character cards: *Strawberry Blobby* (Common), *Blueberry Duo* (Common), *Lemon Spark* (Rare), *Kiwi Hopper* (Rare), *Grape Monarch* (Mythic).
-  - Candy unlock and one-tap skin equipping.
-- **💾 Offline-First Room KMP Persistence & Economy**:
-  - Powered by AndroidX Room 2.8.5 with KSP symbol processing and `BundledSQLiteDriver`.
-  - Tracks player currency (Candies & Gems), unlocked stages, and 1–3 star ratings.
-  - Automatic heart regeneration timer: restores 1 life every 20 minutes (up to 5 max).
-  - In-game Booster Shop: purchase Undos, Hints, Magic Wands, and Heart refills.
-- **⚡ Celebratory Modals & Settings**:
-  - Floating frosted capsule booster dock: `Undo`, `Hint`, and `Magic Wand`.
-  - **Settings & Pause Modal** with live sound/haptic toggles, stage restart, and map navigation.
-  - Celebratory **Level Victory Modal** with 3D embossed stars, score recap, and lightweight Canvas confetti particle bursts.
-  - Empathy-driven **Out of Hearts Modal** featuring a teary sad blue mascot, rewarded ad continue (`+3 ❤️`), and gem revive options.
+  <p align="center">
+    <a href="#-the-anti-arrow-game-feel">✨ The Game Feel</a> •
+    <a href="#-gameplay--tactile-mechanics">🎮 Gameplay & Mechanics</a> •
+    <a href="#-meet-the-squishies">🐾 Meet The Squishies</a> •
+    <a href="#-saga-progression--6-biomes">🗺️ Saga & Biomes</a> •
+    <a href="#-clean-kmp-architecture">🏗️ Architecture</a> •
+    <a href="#-getting-started">🚀 Quick Start</a>
+  </p>
+
+</div>
 
 ---
 
-## 🏗️ Architecture & Modules
+## 🌟 Overview: "Arrow Puzzle" Reimagined
+
+Traditional spatial unblocking games (such as *Arrow Puzzle*) rely on sterile, monochromatic geometric arrows on flat backgrounds. While the core spatial logic is proven and compelling, the presentation is cold, clinical, and impersonal.
+
+**Squish Out** transforms this logic puzzle into an **irresistible, character-driven arcade experience**:
+
+- **No More Sterile Arrows**: Every puzzle piece is an organic, chubby fruit jelly (**"Squishy"**) with an inherent anatomical orientation (tapered directional snout, candy antenna, forward-focused pupils).
+- **Living Eyelid States**: Trapped jellies sleep peacefully `( ˘◡˘ )`; unblocked jellies open star-sparkling eyes `( ✦‿✦ )` with a glowing golden rim, intuitively communicating valid moves with zero visual clutter.
+- **Juicy Tactile Physics**: Tapping an unblocked jelly triggers an explosive squish-and-stretch spring launch into the meadow accompanied by high-pitched waterdrop pops (`ploink!`) and multi-tier haptics.
+- **100% Solvable Guarantee**: A pure zero-dependency reverse-assembly generator (`:core-engine`) mathematically guarantees every board is solvable without frustrating dead-ends.
+
+---
+
+## ✨ The "Anti-Arrow" Game Feel
+
+<div align="center">
+  <img src="assets/gameplay-preview.svg" alt="Squish Out Gameplay Preview and Mechanics" width="100%" />
+</div>
+
+### 👁️ The 4 Eyelid & Movement States
+
+| State | Face | Visual Feedback | Meaning & Interaction |
+| :--- | :---: | :--- | :--- |
+| **Awake & Clear** | `( ✦‿✦ )` | Bright star pupils, golden rim aura, gentle idle pulse | **Ready to escape!** Tap to launch toward the tray edge. |
+| **Asleep & Blocked** | `( ˘◡˘ )` | Curved resting eyelids, calm closed smile, zero rim glow | **Obstructed.** Path is blocked by a jelly or obstacle. |
+| **Bonk / Wobble** | `( >_< )` | Dizzy wince expression, horizontal accordion pancake squish | **Blocked Tap!** Dull rubbery thud audio + dual-pulse haptic recoil. |
+| **Escaping Spring** | `( >‿< )` | Joyful squint eyes, squish-and-stretch tween, bubble trail | **Launch!** Explosive spring takeoff into the meadow with popping audio. |
+
+---
+
+## 🎮 Gameplay & Tactile Mechanics
+
+### 🍓 4-Tier Tactile Juice System
+Squish Out is built around dopamine-rich tactile responsiveness at every frame:
+
+1. **Idle Harmonic Breathing**: Every jelly gently breathes via a volume-preserving sinusoidal wave (`scaleX = 1 + wave`, `scaleY = 1 - wave`) so the board feels alive.
+2. **Touch Anticipation**: Touching a jelly immediately compresses it under the player's finger (`scaleX = 1.14`, `scaleY = 0.86`) before finger lift.
+3. **Explosive Spring Release**: Unblocked launch springs forward along its escape vector (`scaleAlongVector = 1.55`, `scaleOrthogonal = 0.70`) with cubic overshoot curves and 4–6 trailing droplet particles.
+4. **Accordion Rebound & Screen Shake**: Tapping a blocked jelly triggers damped harmonic rebound (`-6px -> +4px -> -2px -> 0px`) and physical tray shake.
+
+### ❄️ Interactive Obstacles & Deflectors
+
+- **🪨 Mossy Meadow Rock**: Indestructible monolithic stone; jellies must navigate around its permanent footprint.
+- **❄️ Frosted Ice Block (2 HP)**: Crackable barrier featuring custom Skia fracture crack lines upon first impact, shattering into crystal shards on the second.
+- **🍯 Honey Pot (1 HP)**: Dripping golden glaze pot that bursts open upon impact, freeing trapped jellies behind it.
+- **🌊 90° Water Jet Deflector**: Tray conveyor tile that dynamically redirects an escaping jelly's straight escape vector by 90 degrees, bending around walls and obstacles!
+- **🌫️ Bubble Fog & Schooling Pairs**: Cloud mist obscuring orientation until nearby tiles are cleared, plus symbiotic pairs that require synchronized dual-lane corridors.
+
+---
+
+## 🐾 Meet The Squishies
+
+Each companion creature in the **Jelly Dex** possesses directional escape anatomy, custom radial gloss shaders, and metagame perks:
+
+<div align="center">
+  <img src="assets/characters.svg" alt="Meet The Squishies Roster" width="100%" />
+</div>
+
+| Companion | Direction | Rarity | Grid Size | Metagame Perk & Trait |
+| :--- | :---: | :---: | :---: | :--- |
+| **🍓 Strawberry Blobby** | ▲ North | Common | `1x1` | Plump & cheerful starting companion; balanced nimble escape. |
+| **🫐 Blueberry Drop** | ▶ East | Common | `1x1` | Calm and cool; two-step smooth slide rhythm. |
+| **🍋 Lemon Spark** | ◀ West | Rare | `1x1` | Zesty adventurer; grants **+10% bonus Candies** on 3-star finishes. |
+| **🥝 Kiwi Hopper** | ▼ South | Rare | `1x1` | Bouncy garden friend; awards **+1 Free Daily Hint** in the booster dock. |
+| **🍇 Grape Eel Duo** | ▲ North | Mythic | `1x2` | Contiguous 2-tile multi-piece; requires dual clear corridor; leaves rainbow trails. |
+| **👑 Honeycomb King Jelly** | ▲ North | **Boss** | `2x2` | Giant 4-cell royal sovereign with golden crown; triggers full-screen confetti! |
+| **🌌 Cosmic Nebula** | ★ Multi | Legendary | `1x1` | Unlocked via 30-day Daily Puzzle streak; radiates pulsing stardust aura. |
+
+---
+
+## 🗺️ Saga Progression & 6 Biomes
+
+Experience a 150-stage winding stepping-stone saga across 6 dynamically themed worlds. Each biome customizes the tray enamel, porcelain rim, floor reflections, and background foliage:
+
+<div align="center">
+  <img src="assets/biomes.svg" alt="Squish Out 6 Biomes Overview" width="100%" />
+</div>
+
+```
+Level 1 ───► Level 25 ───► Level 50 ───► Level 75 ───► Level 100 ───► Level 125 ───► Level 150
+   🌸             🌊             🍯             ☁️             🌌              ✨
+ Sweet Meadow   Soda Lagoon   Honeycomb      Cotton Candy   Licorice       Starlight
+ (Tutorial &    (90° Water    (Honey Pots    (Ice Blocks    Labyrinth      Kingdom
+  Basics)        Jets)         1 HP)          2 HP)         (Eel Schools)  (Boss Gauntlet)
+```
+
+- **🏆 Daily Puzzle Calendar**: A dedicated monthly calendar mode featuring progressive difficulty streaks and exclusive skins like *Cosmic Nebula*.
+- **🎁 Milestone Star Chests**: Earn 3-star ratings across saga stages to unlock wooden and porcelain star chests filled with Gems and Candies.
+- **💖 Heart Regeneration Economy**: 1 life regenerates automatically every 20 minutes (up to 5 maximum hearts), persisted locally with Room KMP.
+- **🛍️ Booster Dock & Shop**: In-tray capsule buttons for **💡 Hint** (raycasts the optimal move), **🪄 Squish Wand** (dissolves any blocking obstacle), and **↺ Undo**.
+
+---
+
+## 🎶 Audio & Haptic Architecture
+
+- **Zero-Asset Procedural 16-Bit PCM Audio Engine**:
+  - Generates real-time mathematical audio waveforms (`POP`, `WOBBLE`, `VICTORY`, `CRACK`, `BOOSTER`) without requiring heavy audio asset bundles.
+  - Seamlessly dispatched via Android `SoundPool` and iOS `CoreAudio` / `AVAudioPlayer`.
+  - Looping cozy ambient background soundtrack with dedicated settings mute toggles.
+- **Multi-Tier Native Haptic Feedback**:
+  - `LIGHT_CLICK` (25ms) — Standard jelly launch.
+  - `ERROR_WOBBLE` (80ms) — Blocked tap collision.
+  - `CRACK_THUMP` — Double-pulse waveform on obstacle fracture.
+  - `VICTORY_FANFARE` — Apple CoreHaptics success notification / Android victory pattern on stage completion.
+
+---
+
+## 🏗️ Clean KMP Architecture
 
 ```
 SquishOut/
-├── core-engine/         # Pure Kotlin (KMP) zero-dependency engine
-│   ├── model/           # Position, Direction, Jelly, Board, Obstacles
-│   ├── generator/       # ReverseAssemblyGenerator & mathematical solver
-│   └── GameEngine.kt    # Unidirectional game state machine
+├── 🎮 core-engine/         # Pure Kotlin (Zero-Dependency) Engine
+│   ├── generator/          # ReverseAssemblyGenerator (100% solvable puzzle logic)
+│   ├── model/              # Jelly, Board, Obstacle, WaterJet, Direction, DifficultyTier
+│   └── GameEngine.kt       # Unidirectional State Machine (taps, undos, hints, solver)
 │
-├── shared/              # 100% Shared UI & Data (Compose Multiplatform)
-│   ├── commonMain/
-│   │   ├── board/       # Skia Custom Canvas, JellyRenderer, TrayRenderer, LaunchAnimation
-│   │   ├── data/        # Room Database, LevelDao, JellySkinDao, UserSessionDao, GameRepository
-│   │   ├── di/          # Koin Modules (DatabaseModule, EngineModule, ViewModelModule)
-│   │   ├── presentation/# GameViewModel with reactive StateFlows
-│   │   ├── theme/       # SquishColors, SquishTypography, SquishOutTheme
-│   │   └── ui/          # SagaMapScreen, GameScreen, JellyDexScreen, BoosterDock, Modals
-│   ├── androidMain/     # Android DatabaseFactory & AudioPlayer (SoundPool + Haptics)
-│   └── iosMain/         # iOS DatabaseFactory (NSDocumentDirectory) & AudioPlayer (CoreAudio)
+├── 🎨 shared/              # 100% Shared UI & Data (Compose Multiplatform)
+│   ├── board/              # Skia Custom Canvas, JellyRenderer, TrayRenderer, ParticleSystem
+│   ├── data/               # Room KMP Database (SQLiteDriver), LevelDao, JellySkinDao
+│   ├── presentation/       # GameViewModel, StateFlow reactive pipelines
+│   ├── theme/              # BiomeTheme (6 palettes), SquishColors, SquishTypography
+│   └── ui/                 # SagaMapScreen, GameScreen, JellyDexScreen, 3D Porcelain Modals
 │
-├── androidApp/          # Native Android Application entry point & Manifest
-└── iosApp/              # SwiftUI iOS Application hosting Shared.framework
+├── 🤖 androidApp/          # Native Android Application (SDK 35, Ladybug/Meerkat)
+└── 🍎 iosApp/              # SwiftUI iOS Application hosting Shared.framework
 ```
+
+### ⚡ 120 FPS Skia Rendering Performance
+- **Zero Per-Frame Allocations**: `JellyRenderer`, `TrayRenderer`, and `SkiaBoardView` utilize pre-allocated scratch `Path`, `CornerRadius`, and `Brush` caches to eliminate garbage collector stutter during 120 FPS animations.
+- **Retina & High-DPI Vector Clarity**: 100% mathematical vector geometry ensures zero pixelation on tablets, foldables, and ultra-high-density displays.
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Technology | Version | Role |
-| :--- | :--- | :--- |
-| **Kotlin** | `2.4.20` | Multiplatform language runtime |
-| **Compose Multiplatform** | `1.12.1` | Declarative shared UI across Android & iOS |
-| **Android Gradle Plugin** | `9.1.1` | Android build tooling |
-| **AndroidX Room KMP** | `2.8.5` | Relational offline database persistence |
-| **AndroidX SQLite** | `2.6.2` | Bundled C-SQLite driver for iOS & Android |
-| **Google KSP** | `2.3.12` | Kotlin Symbol Processing for Room code-gen |
-| **Koin Multiplatform** | `4.2.2` | Dependency injection |
-| **Kotlinx Coroutines** | `1.10.1` | Asynchronous flows and test dispatchers |
+| Layer | Component | Version | Role |
+| :--- | :--- | :--- | :--- |
+| **Language** | Kotlin Multiplatform | `2.4.20` | Cross-platform core logic & UI |
+| **UI Framework** | Compose Multiplatform | `1.12.1` | Declarative shared UI across Android & iOS |
+| **Graphics** | Skia Custom Canvas | Integrated | 120 FPS custom shaders, gloss speculars & paths |
+| **Database** | AndroidX Room KMP | `2.8.5` | Offline-first relational game persistence |
+| **Driver** | AndroidX SQLite | `2.6.2` | Bundled C-SQLite driver for iOS & Android |
+| **DI** | Koin Multiplatform | `4.2.2` | Clean dependency injection |
+| **Coroutines** | Kotlinx Coroutines | `1.10.1` | Asynchronous flows, tick clocks & timers |
+| **Build Tooling**| AGP & Gradle | `9.1.1` | Modern build configuration |
 
 ---
 
@@ -106,8 +181,8 @@ SquishOut/
 
 ### Prerequisites
 - **JDK 17+** (JDK 17 or Azul Zulu 21 recommended)
-- **Android Studio Ladybug / Meerkat** (with Android SDK 35+)
-- **Xcode 16+** (for macOS iOS builds and simulators)
+- **Android Studio Ladybug / Meerkat** (Android SDK 35+)
+- **Xcode 16+** (for iOS simulator & device builds)
 
 ### Clone & Build
 ```bash
@@ -115,7 +190,7 @@ git clone https://github.com/Shahidzbi4213/SquishOut.git
 cd SquishOut
 ```
 
-#### Run All Unit Tests
+#### Run All Unit & Engine Tests
 ```bash
 ./gradlew :core-engine:jvmTest :shared:testAndroidHostTest
 ```
@@ -126,7 +201,7 @@ cd SquishOut
 # Output APK: androidApp/build/outputs/apk/debug/androidApp-debug.apk
 ```
 
-#### Link iOS Framework
+#### Link iOS Framework (Simulator)
 ```bash
 ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
 # Output Framework: shared/build/bin/iosSimulatorArm64/debugFramework/Shared.framework
@@ -134,16 +209,21 @@ cd SquishOut
 
 ---
 
-## 🧪 Testing
+## 🧪 Testing Coverage
 
 The repository maintains **100% test coverage** for all game logic, level generation, and data persistence:
-- `ReverseAssemblyGeneratorTest`: Mathematical verification that every generated board is 100% solvable.
-- `BoardRaycasterTest`: Corner raycasts, obstacle blocking, multi-cell piece collision detection.
+
+- `ReverseAssemblyGeneratorTest`: Mathematical verification that every generated board across 150 stages is 100% solvable.
+- `BoardRaycasterTest`: Corner raycasts, obstacle collisions, 90° water jet trajectory deflections, and multi-cell piece clearances.
 - `GameEngineTest`: Direct tap state transitions, undo stacks, hint solvers, and star calculations.
-- `GameRepositoryTest`: Room DAO operations, 20-minute heart refill timer calculations, and currency economies.
+- `GameRepositoryTest`: Room DAO transactions, 20-minute heart refill timer calculations, and currency economies.
 
 ---
 
 ## 📄 License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+<div align="center">
+  <sub>Crafted with 🍓, Kotlin Multiplatform, and Compose Multiplatform.</sub>
+</div>
