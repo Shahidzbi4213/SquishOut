@@ -1,0 +1,193 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 240" width="100%" height="100%">
+  <defs>
+    <!-- Background Frame Gradient -->
+    <linearGradient id="statesBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC"/>
+      <stop offset="100%" stop-color="#F1F5F9"/>
+    </linearGradient>
+
+    <!-- Card 1: Awake (Strawberry Green/Pink) -->
+    <radialGradient id="esStrawberry" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#FFA8BA"/>
+      <stop offset="55%" stop-color="#FF4D6D"/>
+      <stop offset="100%" stop-color="#C9184A"/>
+    </radialGradient>
+
+    <!-- Card 2: Asleep (Blueberry) -->
+    <radialGradient id="esBlueberry" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#90E0EF"/>
+      <stop offset="55%" stop-color="#00B4D8"/>
+      <stop offset="100%" stop-color="#0077B6"/>
+    </radialGradient>
+
+    <!-- Card 3: Bonk (Lemon Amber) -->
+    <radialGradient id="esLemon" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="55%" stop-color="#FFB703"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </radialGradient>
+
+    <!-- Card 4: Launch (Kiwi Emerald) -->
+    <radialGradient id="esKiwi" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#A7F3D0"/>
+      <stop offset="55%" stop-color="#06D6A0"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </radialGradient>
+
+    <filter id="esCardShadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3.5" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+
+    <style>
+      @keyframes goldPulse {
+        0%, 100% { stroke-width: 2.5; opacity: 0.7; }
+        50% { stroke-width: 3.5; opacity: 1; }
+      }
+      .anim-gold-rim { animation: goldPulse 2.4s ease-in-out infinite; }
+    </style>
+  </defs>
+
+  <!-- Canvas Container -->
+  <rect x="2" y="2" width="836" height="236" rx="20" fill="url(#statesBg)" stroke="#E2E8F0" stroke-width="1.5"/>
+
+  <!-- CARD 1: AWAKE & READY -->
+  <g transform="translate(20, 15)" filter="url(#esCardShadow)">
+    <rect x="0" y="0" width="188" height="210" rx="16" fill="#FFFFFF" stroke="#86EFAC" stroke-width="1.5"/>
+    <!-- Face Sprite -->
+    <g transform="translate(62, 16)">
+      <!-- Golden Rim Aura -->
+      <rect x="-3" y="-3" width="70" height="70" rx="25" fill="none" stroke="#FDE047" stroke-width="3" class="anim-gold-rim"/>
+      <!-- Body -->
+      <rect x="0" y="0" width="64" height="64" rx="22" fill="url(#esStrawberry)"/>
+      <path d="M 22 2 Q 32 -9 42 2 Z" fill="#FF4D6D"/>
+      <rect x="10" y="8" width="24" height="12" rx="6" fill="#FFFFFF" opacity="0.6"/>
+      <!-- Star Eyes ( ✦‿✦ ) -->
+      <g transform="translate(16, 26)">
+        <circle cx="5" cy="5" r="5" fill="#881337"/>
+        <path d="M 5 1.5 Q 5 5 7 5 Q 5 5 5 8.5 Q 5 5 3 5 Q 5 5 5 1.5 Z" fill="#FFFFFF"/>
+      </g>
+      <g transform="translate(38, 26)">
+        <circle cx="5" cy="5" r="5" fill="#881337"/>
+        <path d="M 5 1.5 Q 5 5 7 5 Q 5 5 5 8.5 Q 5 5 3 5 Q 5 5 5 1.5 Z" fill="#FFFFFF"/>
+      </g>
+      <ellipse cx="14" cy="38" rx="4" ry="2.5" fill="#FB7185" opacity="0.7"/>
+      <ellipse cx="50" cy="38" rx="4" ry="2.5" fill="#FB7185" opacity="0.7"/>
+      <path d="M 27 37 Q 32 43 37 37" fill="none" stroke="#881337" stroke-width="2" stroke-linecap="round"/>
+    </g>
+    <!-- Status Badge -->
+    <rect x="24" y="94" width="140" height="22" rx="11" fill="#DCFCE7"/>
+    <text x="94" y="109" font-family="-apple-system, BlinkMacSystemFont, 'Nunito', sans-serif" font-size="10.5" font-weight="800" fill="#15803D" text-anchor="middle">
+      AWAKE &amp; CLEAR
+    </text>
+    <!-- Title -->
+    <text x="94" y="132" font-family="-apple-system, BlinkMacSystemFont, 'Fredoka', 'Nunito', sans-serif" font-size="13" font-weight="800" fill="#1E293B" text-anchor="middle">
+      Awake (Clear)
+    </text>
+    <!-- Description -->
+    <text x="94" y="152" font-family="-apple-system, sans-serif" font-size="10.5" font-weight="600" fill="#475569" text-anchor="middle">
+      Escape path 100% clear.
+    </text>
+    <text x="94" y="168" font-family="-apple-system, sans-serif" font-size="10.5" font-weight="600" fill="#475569" text-anchor="middle">
+      Pulsing golden aura ring;
+    </text>
+    <text x="94" y="184" font-family="-apple-system, sans-serif" font-size="10.5" font-weight="800" fill="#15803D" text-anchor="middle">
+      Tap to launch free!
+    </text>
+  </g>
+
+  <!-- CARD 2: ASLEEP & BLOCKED -->
+  <g transform="translate(224, 15)" filter="url(#esCardShadow)">
+    <rect x="0" y="0" width="188" height="210" rx="16" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+    <g transform="translate(62, 16)">
+      <rect x="0" y="0" width="64" height="64" rx="22" fill="url(#esBlueberry)"/>
+      <path d="M 62 22 Q 72 32 62 42 Z" fill="#00B4D8"/>
+      <rect x="10" y="8" width="24" height="12" rx="6" fill="#FFFFFF" opacity="0.6"/>
+      <!-- Closed Curved Eyelids ( ˘◡˘ ) -->
+      <path d="M 16 30 Q 22 36 28 30" fill="none" stroke="#075985" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M 36 30 Q 42 36 48 30" fill="none" stroke="#075985" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M 28 41 Q 32 45 36 41" fill="none" stroke="#075985" stroke-width="1.8" stroke-linecap="round"/>
+    </g>
+    <rect x="24" y="94" width="140" height="22" rx="11" fill="#F1F5F9"/>
+    <text x="94" y="109" font-family="-apple-system, BlinkMacSystemFont, 'Nunito', sans-serif" font-size="10.5" font-weight="800" fill="#475569" text-anchor="middle">
+      ASLEEP &amp; BLOCKED
+    </text>
+    <text x="94" y="132" font-family="-apple-system, BlinkMacSystemFont, 'Fredoka', 'Nunito', sans-serif" font-size="13" font-weight="800" fill="#1E293B" text-anchor="middle">
+      Resting Lids ˘◡˘
+    </text>
+    <text x="94" y="152" font-family="-apple-system, sans-serif" font-size="10.5" font-weight="600" fill="#475569" text-anchor="middle">
+      Path obstructed by peers.
+    </text>
+    <text x="94" y="168" font-family="-apple-system, sans-serif" font-size="10.5" font-weight="600" fill="#475569" text-anchor="middle">
+      Peacefully sleeping;
+    </text>
+    <text x="94" y="184" font-family="-apple-system, sans-serif" font-size="10.5" font-weight="700" fill="#64748B" text-anchor="middle">
+      Zero visual board noise.
+    </text>
+  </g>
+
+  <!-- CARD 3: BONK / RECOIL -->
+  <g transform="translate(428, 15)" filter="url(#esCardShadow)">
+    <rect x="0" y="0" width="188" height="210" rx="16" fill="#FFFFFF" stroke="#FDE68A" stroke-width="1.5"/>
+    <g transform="translate(60, 16)">
+      <!-- Squished Body (Accordion Deformation) -->
+      <rect x="0" y="4" width="68" height="56" rx="20" fill="url(#esLemon)"/>
+      <path d="M 2 22 Q -7 30 2 38 Z" fill="#FFB703"/>
+      <rect x="12" y="9" width="22" height="10" rx="5" fill="#FFFFFF" opacity="0.6"/>
+      <!-- Wincing Dizzy Eyes ( >_< ) -->
+      <path d="M 18 25 L 25 32 L 18 39" fill="none" stroke="#78350F" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M 50 25 L 43 32 L 50 39" fill="none" stroke="#78350F" stroke-width="2.2" stroke-linecap="round"/>
+      <ellipse cx="34" cy="42" rx="4" ry="3" fill="#78350F"/>
+    </g>
+    <rect x="24" y="94" width="140" height="22" rx="11" fill="#FEF3C7"/>
+    <text x="94" y="109" font-family="-apple-system, BlinkMacSystemFont, 'Nunito', sans-serif" font-size="10.5" font-weight="800" fill="#B45309" text-anchor="middle">
+      BLOCKED BONK
+    </text>
+    <text x="94" y="132" font-family="-apple-system, BlinkMacSystemFont, 'Fredoka', 'Nunito', sans-serif" font-size="13" font-weight="800" fill="#1E293B" text-anchor="middle">
+      Wince Recoil >_&lt;
+    </text>
+    <text x="94" y="152" font-family="-apple-system, sans-serif" font-size="10.5" font-weight="600" fill="#475569" text-anchor="middle">
+      Tapped while obstructed.
+    </text>
+    <text x="94" y="168" font-family="-apple-system, sans-serif" font-size="10.5" font-weight="600" fill="#475569" text-anchor="middle">
+      Accordion pancake squish;
+    </text>
+    <text x="94" y="184" font-family="-apple-system, sans-serif" font-size="10.5" font-weight="700" fill="#B45309" text-anchor="middle">
+      Dual-pulse haptic buzz.
+    </text>
+  </g>
+
+  <!-- CARD 4: SQUISH & LAUNCH -->
+  <g transform="translate(632, 15)" filter="url(#esCardShadow)">
+    <rect x="0" y="0" width="188" height="210" rx="16" fill="#FFFFFF" stroke="#6EE7B7" stroke-width="1.5"/>
+    <g transform="translate(64, 14)">
+      <!-- Stretched Body along vector -->
+      <rect x="3" y="0" width="54" height="66" rx="20" fill="url(#esKiwi)"/>
+      <path d="M 20 64 Q 30 73 40 64 Z" fill="#06D6A0"/>
+      <rect x="12" y="6" width="20" height="12" rx="6" fill="#FFFFFF" opacity="0.6"/>
+      <!-- Joyful Squint Eyes ( >‿< ) -->
+      <path d="M 16 26 L 24 30 L 16 34" fill="none" stroke="#064E3B" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M 44 26 L 36 30 L 44 34" fill="none" stroke="#064E3B" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M 24 40 Q 30 48 36 40 Z" fill="#064E3B"/>
+      <!-- Trailing Droplets -->
+      <circle cx="10" cy="58" r="2.5" fill="#06D6A0" opacity="0.8"/>
+      <circle cx="50" cy="58" r="2.5" fill="#06D6A0" opacity="0.8"/>
+    </g>
+    <rect x="24" y="94" width="140" height="22" rx="11" fill="#D1FAE5"/>
+    <text x="94" y="109" font-family="-apple-system, BlinkMacSystemFont, 'Nunito', sans-serif" font-size="10.5" font-weight="800" fill="#047857" text-anchor="middle">
+      SPRING LAUNCH
+    </text>
+    <text x="94" y="132" font-family="-apple-system, BlinkMacSystemFont, 'Fredoka', 'Nunito', sans-serif" font-size="13" font-weight="800" fill="#1E293B" text-anchor="middle">
+      Glee Escape &gt;‿&lt;
+    </text>
+    <text x="94" y="152" font-family="-apple-system, sans-serif" font-size="10.5" font-weight="600" fill="#475569" text-anchor="middle">
+      Explosive spring release.
+    </text>
+    <text x="94" y="168" font-family="-apple-system, sans-serif" font-size="10.5" font-weight="600" fill="#475569" text-anchor="middle">
+      Squish-and-stretch flight;
+    </text>
+    <text x="94" y="184" font-family="-apple-system, sans-serif" font-size="10.5" font-weight="800" fill="#047857" text-anchor="middle">
+      Juicy waterdrop pop!
+    </text>
+  </g>
+
+</svg>

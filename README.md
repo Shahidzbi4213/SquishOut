@@ -17,11 +17,12 @@
   </p>
 
   <p align="center">
-    <a href="#-the-anti-arrow-game-feel">✨ The Game Feel</a> •
-    <a href="#-gameplay--tactile-mechanics">🎮 Gameplay & Mechanics</a> •
+    <a href="#-gameplay-showcase">📱 Gameplay Showcase</a> •
+    <a href="#-the-anti-arrow-innovation">✨ The Anti-Arrow Innovation</a> •
+    <a href="#-tactile-physics--game-feel">🎮 Tactile Physics & Feel</a> •
     <a href="#-meet-the-squishies">🐾 Meet The Squishies</a> •
     <a href="#-saga-progression--6-biomes">🗺️ Saga & Biomes</a> •
-    <a href="#-clean-kmp-architecture">🏗️ Architecture</a> •
+    <a href="#-architecture--performance">🏗️ Architecture</a> •
     <a href="#-getting-started">🚀 Quick Start</a>
   </p>
 
@@ -29,42 +30,66 @@
 
 ---
 
-## 🌟 Overview: "Arrow Puzzle" Reimagined
+## 📱 Gameplay Showcase
 
-Traditional spatial unblocking games (such as *Arrow Puzzle*) rely on sterile, monochromatic geometric arrows on flat backgrounds. While the core spatial logic is proven and compelling, the presentation is cold, clinical, and impersonal.
+<p align="center">
+  <img src="assets/screenshots/gameplay.png" width="31%" alt="Live Gameplay Board" />
+  &nbsp;
+  <img src="assets/screenshots/sagamap.png" width="31%" alt="Saga Progression Map" />
+  &nbsp;
+  <img src="assets/screenshots/jellydex.png" width="31%" alt="Jelly Dex Companion Showcase" />
+</p>
+
+<p align="center">
+  <em>Live game screens running on device: Tactile 6×6 Game Tray, 150-Stage Stepping-Stone Saga Map, and the Jelly Dex Companion Roster.</em>
+</p>
+
+<details>
+  <summary><strong>🔍 Click to view additional modal screens (Booster Shop &amp; Daily Puzzle Calendar)</strong></summary>
+  <br />
+  <p align="center">
+    <img src="assets/screenshots/shop.png" width="45%" alt="Booster Shop Modal" />
+    &nbsp;&nbsp;
+    <img src="assets/screenshots/daily.png" width="45%" alt="Daily Puzzle Calendar Screen" />
+  </p>
+</details>
+
+---
+
+## ✨ The "Anti-Arrow" Innovation
+
+Traditional spatial unblocking games (such as *Arrow Puzzle*) rely on sterile, monochromatic geometric arrows on flat backgrounds. While the core spatial logic is proven, the visual experience is cold, clinical, and impersonal.
 
 **Squish Out** transforms this logic puzzle into an **irresistible, character-driven arcade experience**:
 
-- **No More Sterile Arrows**: Every puzzle piece is an organic, chubby fruit jelly (**"Squishy"**) with an inherent anatomical orientation (tapered directional snout, candy antenna, forward-focused pupils).
-- **Living Eyelid States**: Trapped jellies sleep peacefully `( ˘◡˘ )`; unblocked jellies open star-sparkling eyes `( ✦‿✦ )` with a glowing golden rim, intuitively communicating valid moves with zero visual clutter.
-- **Juicy Tactile Physics**: Tapping an unblocked jelly triggers an explosive squish-and-stretch spring launch into the meadow accompanied by high-pitched waterdrop pops (`ploink!`) and multi-tier haptics.
+- **No More Sterile Arrows**: Every puzzle piece is an organic fruit jelly creature (**"Squishy"**) with an inherent anatomical escape vector (tapered directional snout, candy antenna, forward-focused pupils).
+- **Living Eyelid Communication**: Trapped jellies sleep peacefully `( ˘ ◡ ˘ )`; unblocked jellies wake up with star-sparkling pupils `( ✦ ‿ ✦ )` and a glowing golden rim, intuitively communicating valid moves with zero visual clutter.
+- **Juicy Tactile Feedback**: Tapping an unblocked jelly triggers an explosive squish-and-stretch spring launch into the meadow accompanied by procedural waterdrop pops (`ploink!`) and multi-tier haptics.
 - **100% Solvable Guarantee**: A pure zero-dependency reverse-assembly generator (`:core-engine`) mathematically guarantees every board is solvable without frustrating dead-ends.
 
----
-
-## ✨ The "Anti-Arrow" Game Feel
-
 <div align="center">
-  <img src="assets/gameplay-preview.svg" alt="Squish Out Gameplay Preview and Mechanics" width="100%" />
+  <img src="assets/eyelid-states.svg" alt="The 4 Eyelid and Movement States" width="100%" />
 </div>
 
-### 👁️ The 4 Eyelid & Movement States
+<br />
 
-| State | Face | Visual Feedback | Meaning & Interaction |
+### 👁️ Eyelid & Movement State Reference
+
+| State | Expression | Visual Feedback | Game Mechanic & Meaning |
 | :--- | :---: | :--- | :--- |
-| **Awake & Clear** | `( ✦‿✦ )` | Bright star pupils, golden rim aura, gentle idle pulse | **Ready to escape!** Tap to launch toward the tray edge. |
-| **Asleep & Blocked** | `( ˘◡˘ )` | Curved resting eyelids, calm closed smile, zero rim glow | **Obstructed.** Path is blocked by a jelly or obstacle. |
-| **Bonk / Wobble** | `( >_< )` | Dizzy wince expression, horizontal accordion pancake squish | **Blocked Tap!** Dull rubbery thud audio + dual-pulse haptic recoil. |
-| **Escaping Spring** | `( >‿< )` | Joyful squint eyes, squish-and-stretch tween, bubble trail | **Launch!** Explosive spring takeoff into the meadow with popping audio. |
+| **Awake & Clear** | `( ✦ ‿ ✦ )` | Bright star pupils, pulsing golden rim aura, gentle idle pulse | **Ready to escape!** Escape corridor to tray edge is 100% clear. Tap to launch free. |
+| **Asleep & Blocked** | `( ˘ ◡ ˘ )` | Curved resting eyelids, relaxed smile, zero rim glow | **Obstructed.** Path is blocked by a peer or barrier. Resting quietly with zero board noise. |
+| **Blocked Bonk** | `( > _ < )` | Dizzy wince, accordion pancake squish, damped rebound | **Tap Refusal!** Tapped while obstructed. Rubbery thud audio with dual-pulse haptic recoil. |
+| **Spring Launch** | `( > ‿ < )` | Joyful squint glee, squish-and-stretch flight, trailing droplets | **Escape!** Explosive spring takeoff along vector with high-pitched popping audio. |
 
 ---
 
-## 🎮 Gameplay & Tactile Mechanics
+## 🎮 Tactile Physics & Game Feel
 
 ### 🍓 4-Tier Tactile Juice System
 Squish Out is built around dopamine-rich tactile responsiveness at every frame:
 
-1. **Idle Harmonic Breathing**: Every jelly gently breathes via a volume-preserving sinusoidal wave (`scaleX = 1 + wave`, `scaleY = 1 - wave`) so the board feels alive.
+1. **Idle Harmonic Breathing**: Every jelly gently breathes via a volume-preserving sinusoidal wave (`scaleX = 1 + wave`, `scaleY = 1 - wave`) so the board feels organic and alive.
 2. **Touch Anticipation**: Touching a jelly immediately compresses it under the player's finger (`scaleX = 1.14`, `scaleY = 0.86`) before finger lift.
 3. **Explosive Spring Release**: Unblocked launch springs forward along its escape vector (`scaleAlongVector = 1.55`, `scaleOrthogonal = 0.70`) with cubic overshoot curves and 4–6 trailing droplet particles.
 4. **Accordion Rebound & Screen Shake**: Tapping a blocked jelly triggers damped harmonic rebound (`-6px -> +4px -> -2px -> 0px`) and physical tray shake.
@@ -87,33 +112,38 @@ Each companion creature in the **Jelly Dex** possesses directional escape anatom
   <img src="assets/characters.svg" alt="Meet The Squishies Roster" width="100%" />
 </div>
 
-| Companion | Direction | Rarity | Grid Size | Metagame Perk & Trait |
+<br />
+
+| Companion | Vector | Rarity | Grid Size | Metagame Perk & Trait |
 | :--- | :---: | :---: | :---: | :--- |
-| **🍓 Strawberry Blobby** | ▲ North | Common | `1x1` | Plump & cheerful starting companion; balanced nimble escape. |
-| **🫐 Blueberry Drop** | ▶ East | Common | `1x1` | Calm and cool; two-step smooth slide rhythm. |
-| **🍋 Lemon Spark** | ◀ West | Rare | `1x1` | Zesty adventurer; grants **+10% bonus Candies** on 3-star finishes. |
-| **🥝 Kiwi Hopper** | ▼ South | Rare | `1x1` | Bouncy garden friend; awards **+1 Free Daily Hint** in the booster dock. |
-| **🍇 Grape Eel Duo** | ▲ North | Mythic | `1x2` | Contiguous 2-tile multi-piece; requires dual clear corridor; leaves rainbow trails. |
-| **👑 Honeycomb King Jelly** | ▲ North | **Boss** | `2x2` | Giant 4-cell royal sovereign with golden crown; triggers full-screen confetti! |
-| **🌌 Cosmic Nebula** | ★ Multi | Legendary | `1x1` | Unlocked via 30-day Daily Puzzle streak; radiates pulsing stardust aura. |
+| **🍓 Strawberry Blobby** | ▲ North | Common | `1×1` | Plump & cheerful starting companion; balanced nimble escape. |
+| **🫐 Blueberry Drop** | ▶ East | Common | `1×1` | Calm and cool; two-step smooth slide rhythm. |
+| **🍋 Lemon Spark** | ◀ West | Rare | `1×1` | Zesty adventurer; grants **+10% bonus Candies** on 3-star finishes. |
+| **🥝 Kiwi Hopper** | ▼ South | Rare | `1×1` | Bouncy garden friend; awards **+1 Free Daily Hint** in the booster dock. |
+| **🍇 Grape Eel Duo** | ▲ North | Mythic | `1×2` | Contiguous 2-tile multi-piece; requires dual clear corridor; leaves rainbow trails. |
+| **👑 Honeycomb King Jelly** | ▲ North | **Boss** | `2×2` | Giant 4-cell royal sovereign with golden crown; triggers full-screen confetti! |
+| **🌌 Cosmic Nebula** | ★ Multi | Legendary | `1×1` | Unlocked via 30-day Daily Puzzle streak; radiates pulsing stardust aura. |
 
 ---
 
 ## 🗺️ Saga Progression & 6 Biomes
 
-Experience a 150-stage winding stepping-stone saga across 6 dynamically themed worlds. Each biome customizes the tray enamel, porcelain rim, floor reflections, and background foliage:
+Experience a 150-stage winding stepping-stone saga across 6 dynamically themed worlds. Each biome customizes the tray enamel, porcelain rim, floor reflections, and ambient foliage:
 
 <div align="center">
   <img src="assets/biomes.svg" alt="Squish Out 6 Biomes Overview" width="100%" />
 </div>
 
-```
-Level 1 ───► Level 25 ───► Level 50 ───► Level 75 ───► Level 100 ───► Level 125 ───► Level 150
-   🌸             🌊             🍯             ☁️             🌌              ✨
- Sweet Meadow   Soda Lagoon   Honeycomb      Cotton Candy   Licorice       Starlight
- (Tutorial &    (90° Water    (Honey Pots    (Ice Blocks    Labyrinth      Kingdom
-  Basics)        Jets)         1 HP)          2 HP)         (Eel Schools)  (Boss Gauntlet)
-```
+<br />
+
+| Biome | Stages | Theme & Visual Atmosphere | Unique Obstacle & Mechanic Hazards |
+| :--- | :---: | :--- | :--- |
+| **🌸 Sweet Meadow** | 1–25 | Lush mint grass, wild daisies, warm porcelain rims | Foundational unblocking, mossy meadow rocks |
+| **🌊 Soda Lagoon** | 26–50 | Turquoise fizzy water, water lilies, bubble streams | **90° Water Jet deflectors** bending escape rays |
+| **🍯 Honeycomb Valley** | 51–75 | Warm amber trays, honeycombs, floral pollen | **Honey Pots (1 HP)** with dripping glaze |
+| **☁️ Cotton Candy Peak** | 76–100 | Pastel magenta & violet cloud banks, mist | **Frosted Ice Blocks (2 HP)** with Skia fracture lines |
+| **🌌 Licorice Labyrinth** | 101–125 | Deep twilight lavender corridors | **1×2 Eel Schools** & symbiotic pairs |
+| **✨ Starlight Kingdom** | 126–150 | Radiant golden celestial citadel | **2×2 King Jelly Boss Rush** gauntlets |
 
 - **🏆 Daily Puzzle Calendar**: A dedicated monthly calendar mode featuring progressive difficulty streaks and exclusive skins like *Cosmic Nebula*.
 - **🎁 Milestone Star Chests**: Earn 3-star ratings across saga stages to unlock wooden and porcelain star chests filled with Gems and Candies.
@@ -136,7 +166,7 @@ Level 1 ───► Level 25 ───► Level 50 ───► Level 75 ──
 
 ---
 
-## 🏗️ Clean KMP Architecture
+## 🏗️ Architecture & Performance
 
 ```
 SquishOut/

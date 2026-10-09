@@ -1,125 +1,116 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 210" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 150" width="100%" height="100%">
   <defs>
-    <!-- Biome 1: Sweet Meadow -->
-    <linearGradient id="bMeadow" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#F0FDF4"/>
-      <stop offset="100%" stop-color="#DCFCE7"/>
-    </linearGradient>
+    <linearGradient id="b1" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#F0FDF4"/><stop offset="100%" stop-color="#DCFCE7"/></linearGradient>
+    <linearGradient id="b2" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#F0F9FF"/><stop offset="100%" stop-color="#BAE6FD"/></linearGradient>
+    <linearGradient id="b3" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFFBEB"/><stop offset="100%" stop-color="#FDE68A"/></linearGradient>
+    <linearGradient id="b4" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FDF4FF"/><stop offset="100%" stop-color="#F5D0FE"/></linearGradient>
+    <linearGradient id="b5" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#F5F3FF"/><stop offset="100%" stop-color="#DDD6FE"/></linearGradient>
+    <linearGradient id="b6" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FEFCE8"/><stop offset="100%" stop-color="#FEF08A"/></linearGradient>
 
-    <!-- Biome 2: Soda Lagoon -->
-    <linearGradient id="bLagoon" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#F0F9FF"/>
-      <stop offset="100%" stop-color="#BAE6FD"/>
-    </linearGradient>
-
-    <!-- Biome 3: Honeycomb Valley -->
-    <linearGradient id="bHoney" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FFFBEB"/>
-      <stop offset="100%" stop-color="#FDE68A"/>
-    </linearGradient>
-
-    <!-- Biome 4: Cotton Candy Peak -->
-    <linearGradient id="bPeak" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FDF4FF"/>
-      <stop offset="100%" stop-color="#F5D0FE"/>
-    </linearGradient>
-
-    <!-- Biome 5: Licorice Labyrinth -->
-    <linearGradient id="bLabyrinth" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#F5F3FF"/>
-      <stop offset="100%" stop-color="#DDD6FE"/>
-    </linearGradient>
-
-    <!-- Biome 6: Starlight Kingdom -->
-    <linearGradient id="bKingdom" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FEFCE8"/>
-      <stop offset="100%" stop-color="#FEF08A"/>
-    </linearGradient>
-
-    <filter id="bShadow" x="-10%" y="-10%" width="130%" height="130%">
-      <feDropShadow dx="0" dy="4" stdDeviation="3.5" flood-color="#0F172A" flood-opacity="0.08"/>
+    <filter id="bioShadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="3.5" stdDeviation="3" flood-color="#0F172A" flood-opacity="0.06"/>
     </filter>
   </defs>
 
   <!-- Container -->
-  <rect x="2" y="2" width="836" height="206" rx="20" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+  <rect x="2" y="2" width="836" height="146" rx="18" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
 
-  <!-- Title -->
-  <g transform="translate(25, 24)">
-    <text x="0" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Fredoka', 'Nunito', sans-serif" font-size="16" font-weight="900" fill="#1E293B">
-      🗺️ 6 Dynamic Biomes Across 150 Handcrafted Stages
+  <!-- 6 Biome Cards Evenly Distributed (Width: 124px each, Spacing: 10px, starting X: 22) -->
+
+  <!-- 1. Sweet Meadow (Stages 1-25) -->
+  <g transform="translate(22, 14)" filter="url(#bioShadow)">
+    <rect x="0" y="0" width="124" height="118" rx="14" fill="url(#b1)" stroke="#86EFAC" stroke-width="1.5"/>
+    <text x="62" y="38" font-size="24" text-anchor="middle">🌸</text>
+    <text x="62" y="66" font-family="-apple-system, BlinkMacSystemFont, 'Nunito', sans-serif" font-size="12" font-weight="800" fill="#15803D" text-anchor="middle">
+      Sweet Meadow
     </text>
-    <text x="0" y="16" font-family="-apple-system, BlinkMacSystemFont, 'Nunito', sans-serif" font-size="11.5" font-weight="600" fill="#64748B">
-      Adaptive tray floors, porcelain rims, ambient themes, and evolving obstacle hazards per world.
+    <rect x="22" y="74" width="80" height="18" rx="9" fill="#DCFCE7"/>
+    <text x="62" y="87" font-family="-apple-system, sans-serif" font-size="9.5" font-weight="800" fill="#166534" text-anchor="middle">
+      Stages 1–25
+    </text>
+    <text x="62" y="105" font-family="-apple-system, sans-serif" font-size="9" font-weight="600" fill="#047857" text-anchor="middle">
+      Basics &amp; Rocks
     </text>
   </g>
 
-  <!-- 6 Biome Cards (Width: 122px each, Spacing: 10px) -->
-
-  <!-- 1. Sweet Meadow -->
-  <g transform="translate(25, 54)" filter="url(#bShadow)">
-    <rect x="0" y="0" width="122" height="130" rx="14" fill="url(#bMeadow)" stroke="#86EFAC" stroke-width="1.5"/>
-    <circle cx="61" cy="34" r="20" fill="#FFFFFF" opacity="0.8"/>
-    <text x="61" y="42" font-size="22" text-anchor="middle">🌸</text>
-    <text x="61" y="74" font-family="-apple-system, sans-serif" font-size="11.5" font-weight="800" fill="#15803D" text-anchor="middle">Sweet Meadow</text>
-    <rect x="26" y="82" width="70" height="16" rx="8" fill="#DCFCE7"/>
-    <text x="61" y="93" font-family="-apple-system, sans-serif" font-size="9" font-weight="800" fill="#166534" text-anchor="middle">Stages 1–25</text>
-    <text x="61" y="115" font-family="-apple-system, sans-serif" font-size="8.5" font-weight="600" fill="#047857" text-anchor="middle">Tutorial &amp; Basics</text>
+  <!-- 2. Soda Lagoon (Stages 26-50) -->
+  <g transform="translate(156, 14)" filter="url(#bioShadow)">
+    <rect x="0" y="0" width="124" height="118" rx="14" fill="url(#b2)" stroke="#7DD3FC" stroke-width="1.5"/>
+    <text x="62" y="38" font-size="24" text-anchor="middle">🌊</text>
+    <text x="62" y="66" font-family="-apple-system, BlinkMacSystemFont, 'Nunito', sans-serif" font-size="12" font-weight="800" fill="#0369A1" text-anchor="middle">
+      Soda Lagoon
+    </text>
+    <rect x="22" y="74" width="80" height="18" rx="9" fill="#BAE6FD"/>
+    <text x="62" y="87" font-family="-apple-system, sans-serif" font-size="9.5" font-weight="800" fill="#075985" text-anchor="middle">
+      Stages 26–50
+    </text>
+    <text x="62" y="105" font-family="-apple-system, sans-serif" font-size="9" font-weight="600" fill="#0284C7" text-anchor="middle">
+      90° Water Jets
+    </text>
   </g>
 
-  <!-- 2. Soda Lagoon -->
-  <g transform="translate(157, 54)" filter="url(#bShadow)">
-    <rect x="0" y="0" width="122" height="130" rx="14" fill="url(#bLagoon)" stroke="#7DD3FC" stroke-width="1.5"/>
-    <circle cx="61" cy="34" r="20" fill="#FFFFFF" opacity="0.8"/>
-    <text x="61" y="42" font-size="22" text-anchor="middle">🌊</text>
-    <text x="61" y="74" font-family="-apple-system, sans-serif" font-size="11.5" font-weight="800" fill="#0369A1" text-anchor="middle">Soda Lagoon</text>
-    <rect x="26" y="82" width="70" height="16" rx="8" fill="#BAE6FD"/>
-    <text x="61" y="93" font-family="-apple-system, sans-serif" font-size="9" font-weight="800" fill="#075985" text-anchor="middle">Stages 26–50</text>
-    <text x="61" y="115" font-family="-apple-system, sans-serif" font-size="8.5" font-weight="600" fill="#0284C7" text-anchor="middle">90° Water Jets</text>
+  <!-- 3. Honeycomb Valley (Stages 51-75) -->
+  <g transform="translate(290, 14)" filter="url(#bioShadow)">
+    <rect x="0" y="0" width="124" height="118" rx="14" fill="url(#b3)" stroke="#FCD34D" stroke-width="1.5"/>
+    <text x="62" y="38" font-size="24" text-anchor="middle">🍯</text>
+    <text x="62" y="66" font-family="-apple-system, BlinkMacSystemFont, 'Nunito', sans-serif" font-size="12" font-weight="800" fill="#B45309" text-anchor="middle">
+      Honeycomb
+    </text>
+    <rect x="22" y="74" width="80" height="18" rx="9" fill="#FDE68A"/>
+    <text x="62" y="87" font-family="-apple-system, sans-serif" font-size="9.5" font-weight="800" fill="#92400E" text-anchor="middle">
+      Stages 51–75
+    </text>
+    <text x="62" y="105" font-family="-apple-system, sans-serif" font-size="9" font-weight="600" fill="#B45309" text-anchor="middle">
+      Honey Pots (1 HP)
+    </text>
   </g>
 
-  <!-- 3. Honeycomb Valley -->
-  <g transform="translate(289, 54)" filter="url(#bShadow)">
-    <rect x="0" y="0" width="122" height="130" rx="14" fill="url(#bHoney)" stroke="#FCD34D" stroke-width="1.5"/>
-    <circle cx="61" cy="34" r="20" fill="#FFFFFF" opacity="0.8"/>
-    <text x="61" y="42" font-size="22" text-anchor="middle">🍯</text>
-    <text x="61" y="74" font-family="-apple-system, sans-serif" font-size="11.5" font-weight="800" fill="#B45309" text-anchor="middle">Honeycomb</text>
-    <rect x="26" y="82" width="70" height="16" rx="8" fill="#FDE68A"/>
-    <text x="61" y="93" font-family="-apple-system, sans-serif" font-size="9" font-weight="800" fill="#92400E" text-anchor="middle">Stages 51–75</text>
-    <text x="61" y="115" font-family="-apple-system, sans-serif" font-size="8.5" font-weight="600" fill="#B45309" text-anchor="middle">Honey Pots (1 HP)</text>
+  <!-- 4. Cotton Candy Peak (Stages 76-100) -->
+  <g transform="translate(424, 14)" filter="url(#bioShadow)">
+    <rect x="0" y="0" width="124" height="118" rx="14" fill="url(#b4)" stroke="#F0ABFC" stroke-width="1.5"/>
+    <text x="62" y="38" font-size="24" text-anchor="middle">☁️</text>
+    <text x="62" y="66" font-family="-apple-system, BlinkMacSystemFont, 'Nunito', sans-serif" font-size="12" font-weight="800" fill="#A21CAF" text-anchor="middle">
+      Cotton Candy
+    </text>
+    <rect x="22" y="74" width="80" height="18" rx="9" fill="#F5D0FE"/>
+    <text x="62" y="87" font-family="-apple-system, sans-serif" font-size="9.5" font-weight="800" fill="#86198F" text-anchor="middle">
+      Stages 76–100
+    </text>
+    <text x="62" y="105" font-family="-apple-system, sans-serif" font-size="9" font-weight="600" fill="#A21CAF" text-anchor="middle">
+      Ice Blocks (2 HP)
+    </text>
   </g>
 
-  <!-- 4. Cotton Candy Peak -->
-  <g transform="translate(421, 54)" filter="url(#bShadow)">
-    <rect x="0" y="0" width="122" height="130" rx="14" fill="url(#bPeak)" stroke="#F0ABFC" stroke-width="1.5"/>
-    <circle cx="61" cy="34" r="20" fill="#FFFFFF" opacity="0.8"/>
-    <text x="61" y="42" font-size="22" text-anchor="middle">☁️</text>
-    <text x="61" y="74" font-family="-apple-system, sans-serif" font-size="11.5" font-weight="800" fill="#A21CAF" text-anchor="middle">Cotton Candy</text>
-    <rect x="26" y="82" width="70" height="16" rx="8" fill="#F5D0FE"/>
-    <text x="61" y="93" font-family="-apple-system, sans-serif" font-size="9" font-weight="800" fill="#86198F" text-anchor="middle">Stages 76–100</text>
-    <text x="61" y="115" font-family="-apple-system, sans-serif" font-size="8.5" font-weight="600" fill="#A21CAF" text-anchor="middle">Ice Blocks (2 HP)</text>
+  <!-- 5. Licorice Labyrinth (Stages 101-125) -->
+  <g transform="translate(558, 14)" filter="url(#bioShadow)">
+    <rect x="0" y="0" width="124" height="118" rx="14" fill="url(#b5)" stroke="#C4B5FD" stroke-width="1.5"/>
+    <text x="62" y="38" font-size="24" text-anchor="middle">🌌</text>
+    <text x="62" y="66" font-family="-apple-system, BlinkMacSystemFont, 'Nunito', sans-serif" font-size="12" font-weight="800" fill="#6D28D9" text-anchor="middle">
+      Licorice Maze
+    </text>
+    <rect x="22" y="74" width="80" height="18" rx="9" fill="#DDD6FE"/>
+    <text x="62" y="87" font-family="-apple-system, sans-serif" font-size="9.5" font-weight="800" fill="#5B21B6" text-anchor="middle">
+      Stages 101–125
+    </text>
+    <text x="62" y="105" font-family="-apple-system, sans-serif" font-size="9" font-weight="600" fill="#6D28D9" text-anchor="middle">
+      1×2 Eel Schools
+    </text>
   </g>
 
-  <!-- 5. Licorice Labyrinth -->
-  <g transform="translate(553, 54)" filter="url(#bShadow)">
-    <rect x="0" y="0" width="122" height="130" rx="14" fill="url(#bLabyrinth)" stroke="#C4B5FD" stroke-width="1.5"/>
-    <circle cx="61" cy="34" r="20" fill="#FFFFFF" opacity="0.8"/>
-    <text x="61" y="42" font-size="22" text-anchor="middle">🌌</text>
-    <text x="61" y="74" font-family="-apple-system, sans-serif" font-size="11.5" font-weight="800" fill="#6D28D9" text-anchor="middle">Licorice Maze</text>
-    <rect x="26" y="82" width="70" height="16" rx="8" fill="#DDD6FE"/>
-    <text x="61" y="93" font-family="-apple-system, sans-serif" font-size="9" font-weight="800" fill="#5B21B6" text-anchor="middle">Stages 101–125</text>
-    <text x="61" y="115" font-family="-apple-system, sans-serif" font-size="8.5" font-weight="600" fill="#6D28D9" text-anchor="middle">1×2 Eel Schools</text>
-  </g>
-
-  <!-- 6. Starlight Kingdom -->
-  <g transform="translate(685, 54)" filter="url(#bShadow)">
-    <rect x="0" y="0" width="122" height="130" rx="14" fill="url(#bKingdom)" stroke="#FDE047" stroke-width="1.5"/>
-    <circle cx="61" cy="34" r="20" fill="#FFFFFF" opacity="0.8"/>
-    <text x="61" y="42" font-size="22" text-anchor="middle">✨</text>
-    <text x="61" y="74" font-family="-apple-system, sans-serif" font-size="11.5" font-weight="800" fill="#A16207" text-anchor="middle">Starlight Realm</text>
-    <rect x="26" y="82" width="70" height="16" rx="8" fill="#FEF08A"/>
-    <text x="61" y="93" font-family="-apple-system, sans-serif" font-size="9" font-weight="800" fill="#854D0E" text-anchor="middle">Stages 126–150</text>
-    <text x="61" y="115" font-family="-apple-system, sans-serif" font-size="8.5" font-weight="600" fill="#A16207" text-anchor="middle">King Boss Gauntlet</text>
+  <!-- 6. Starlight Kingdom (Stages 126-150) -->
+  <g transform="translate(692, 14)" filter="url(#bioShadow)">
+    <rect x="0" y="0" width="124" height="118" rx="14" fill="url(#b6)" stroke="#FDE047" stroke-width="1.5"/>
+    <text x="62" y="38" font-size="24" text-anchor="middle">✨</text>
+    <text x="62" y="66" font-family="-apple-system, BlinkMacSystemFont, 'Nunito', sans-serif" font-size="12" font-weight="800" fill="#A16207" text-anchor="middle">
+      Starlight Realm
+    </text>
+    <rect x="22" y="74" width="80" height="18" rx="9" fill="#FEF08A"/>
+    <text x="62" y="87" font-family="-apple-system, sans-serif" font-size="9.5" font-weight="800" fill="#854D0E" text-anchor="middle">
+      Stages 126–150
+    </text>
+    <text x="62" y="105" font-family="-apple-system, sans-serif" font-size="9" font-weight="600" fill="#A16207" text-anchor="middle">
+      King Boss Rush
+    </text>
   </g>
 
 </svg>
