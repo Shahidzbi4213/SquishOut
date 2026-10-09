@@ -1,8 +1,10 @@
 package com.squishout.game.data
 
+import com.squishout.game.data.dao.DailyPuzzleDao
 import com.squishout.game.data.dao.JellySkinDao
 import com.squishout.game.data.dao.LevelDao
 import com.squishout.game.data.dao.UserSessionDao
+import com.squishout.game.data.entity.DailyPuzzleRecordEntity
 import com.squishout.game.data.entity.JellySkinEntity
 import com.squishout.game.data.entity.LevelRecordEntity
 import com.squishout.game.data.entity.UserSessionEntity
@@ -11,6 +13,7 @@ import com.squishout.game.data.repository.STAR_CHEST_MILESTONES
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -128,6 +131,33 @@ class FakeUserSessionDao : UserSessionDao {
         val cur = session.value ?: UserSessionEntity()
         session.value = cur.copy(claimedStarChests = claimed)
     }
+
+    override suspend fun updateDailyPuzzleStreak(streak: Int, epochDay: Long) {
+        val cur = session.value ?: UserSessionEntity()
+        session.value = cur.copy(dailyPuzzleStreak = streak, lastDailyPuzzleEpochDay = epochDay)
+    }
+
+    override suspend fun updateClaimedMonthlyMilestones(claimed: String) {
+        val cur = session.value ?: UserSessionEntity()
+        session.value = cur.copy(claimedMonthlyMilestones = claimed)
+    }
+}
+
+class FakeDailyPuzzleDao : DailyPuzzleDao {
+    private val records = MutableStateFlow<Map<Long, DailyPuzzleRecordEntity>>(emptyMap())
+
+    override fun getRecordsForMonth(monthKey: String): Flow<List<DailyPuzzleRecordEntity>> =
+        records.map { it.values.filter { r -> r.monthKey == monthKey }.sortedBy { r -> r.dayOfMonth } }
+
+    override fun getRecordForDay(epochDay: Long): Flow<DailyPuzzleRecordEntity?> =
+        records.map { it[epochDay] }
+
+    override fun getAllRecords(): Flow<List<DailyPuzzleRecordEntity>> =
+        records.map { it.values.sortedByDescending { r -> r.epochDay } }
+
+    override suspend fun insertOrUpdate(record: DailyPuzzleRecordEntity) {
+        records.value = records.value + (record.epochDay to record)
+    }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -136,6 +166,7 @@ class GameRepositoryTest {
     private lateinit var levelDao: FakeLevelDao
     private lateinit var skinDao: FakeJellySkinDao
     private lateinit var sessionDao: FakeUserSessionDao
+    private lateinit var dailyPuzzleDao: FakeDailyPuzzleDao
     private lateinit var repository: GameRepository
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
@@ -145,7 +176,8 @@ class GameRepositoryTest {
         levelDao = FakeLevelDao()
         skinDao = FakeJellySkinDao()
         sessionDao = FakeUserSessionDao()
-        repository = GameRepository(levelDao, skinDao, sessionDao, testScope)
+        dailyPuzzleDao = FakeDailyPuzzleDao()
+        repository = GameRepository(levelDao, skinDao, sessionDao, dailyPuzzleDao, testScope)
         testDispatcher.scheduler.advanceUntilIdle()
     }
 
@@ -330,5 +362,79 @@ class GameRepositoryTest {
         val duplicate = repository.claimStarChest(milestone, totalStars = 15)
         testScheduler.advanceUntilIdle()
         assertFalse(duplicate)
+    }
+
+    @Test
+    fun testDailyPuzzleCompletionAndStreak() = runTest(testDispatcher) {
+        testScheduler.advanceUntilIdle()
+        val epochDay1 = 20000L
+        val dateString1 = "2024-10-09"
+        val dayOfMonth1 = 9
+        val monthKey1 = "2024-10"
+
+        val initialCandies = repository.session.value.candies
+        val initialGems = repository.session.value.gems
+
+        val success = repository.recordDailyPuzzleCompletion(
+            epochDay = epochDay1,
+            dateString = dateString1,
+            dayOfMonth = dayOfMonth1,
+            monthKey = monthKey1,
+            stars = 3,
+            movesUsed = 12,
+            score = 1500,
+            currentEpochMs = epochDay1 * 86400000L
+        )
+        testScheduler.advanceUntilIdle()
+        assertTrue(success)
+        assertEquals(initialCandies + 100, repository.session.value.candies)
+        assertEquals(initialGems + 10, repository.session.value.gems)
+        assertEquals(1, repository.session.value.dailyPuzzleStreak)
+        assertEquals(epochDay1, repository.session.value.lastDailyPuzzleEpochDay)
+
+        // Consecutive Day completion (Day + 1)
+        val epochDay2 = epochDay1 + 1
+        repository.recordDailyPuzzleCompletion(
+            epochDay = epochDay2,
+            dateString = "2024-10-10",
+            dayOfMonth = 10,
+            monthKey = monthKey1,
+            stars = 3,
+            movesUsed = 10,
+            score = 1800,
+            currentEpochMs = epochDay2 * 86400000L
+        )
+        testScheduler.advanceUntilIdle()
+        assertEquals(2, repository.session.value.dailyPuzzleStreak)
+    }
+
+    @Test
+    fun testMonthlyMilestoneClaim() = runTest(testDispatcher) {
+        testScheduler.advanceUntilIdle()
+        val monthKey = "2024-10"
+
+        // Fails if completion count < milestone
+        val failedClaim = repository.claimMonthlyMilestone(monthKey, milestoneDays = 5, monthlyCompletionCount = 3)
+        assertFalse(failedClaim)
+
+        // Succeeds if completion count >= 5
+        val initialCandies = repository.session.value.candies
+        val successClaim = repository.claimMonthlyMilestone(monthKey, milestoneDays = 5, monthlyCompletionCount = 5)
+        testScheduler.advanceUntilIdle()
+        assertTrue(successClaim)
+        assertEquals(initialCandies + 150, repository.session.value.candies)
+
+        // Duplicate claim fails
+        val duplicateClaim = repository.claimMonthlyMilestone(monthKey, milestoneDays = 5, monthlyCompletionCount = 5)
+        testScheduler.advanceUntilIdle()
+        assertFalse(duplicateClaim)
+
+        // Claiming 20-day milestone unlocks cosmic_nebula skin
+        val claim20 = repository.claimMonthlyMilestone(monthKey, milestoneDays = 20, monthlyCompletionCount = 20)
+        testScheduler.advanceUntilIdle()
+        assertTrue(claim20)
+        val cosmicSkin = repository.allSkins.firstOrNull()?.find { it.jellyId == "cosmic_nebula" }
+        assertNotNull(cosmicSkin)
+        assertTrue(cosmicSkin.isUnlocked)
     }
 }

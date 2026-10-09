@@ -18,6 +18,7 @@ import com.squishout.game.data.entity.UserSessionEntity
 import com.squishout.game.data.repository.GameRepository
 import com.squishout.game.presentation.GameViewModel
 import com.squishout.game.theme.SquishOutTheme
+import com.squishout.game.ui.DailyPuzzleCalendarScreen
 import com.squishout.game.ui.GameScreen
 import com.squishout.game.ui.JellyDexScreen
 import com.squishout.game.ui.SagaMapScreen
@@ -28,7 +29,8 @@ import org.koin.compose.viewmodel.koinViewModel
 enum class AppScreen {
     SAGA_MAP,
     GAMEPLAY,
-    JELLY_DEX
+    JELLY_DEX,
+    DAILY_CALENDAR
 }
 
 @Composable
@@ -87,6 +89,9 @@ fun App() {
                             onClaimStarChest = { milestone ->
                                 val totalStars = levels.sumOf { it.stars }
                                 viewModel.claimStarChest(milestone, totalStars)
+                            },
+                            onNavigateToCalendar = {
+                                currentScreen = AppScreen.DAILY_CALENDAR
                             }
                         )
                     }
@@ -95,7 +100,7 @@ fun App() {
                         GameScreen(
                             viewModel = viewModel,
                             onBackToMap = {
-                                currentScreen = AppScreen.SAGA_MAP
+                                currentScreen = if (viewModel.isDailyPuzzleMode) AppScreen.DAILY_CALENDAR else AppScreen.SAGA_MAP
                             }
                         )
                     }
@@ -119,6 +124,23 @@ fun App() {
                             },
                             onNavigateToShop = {
                                 isShopOpen = true
+                            }
+                        )
+                    }
+
+                    AppScreen.DAILY_CALENDAR -> {
+                        DailyPuzzleCalendarScreen(
+                            session = session,
+                            repository = repository,
+                            onPlayPuzzle = { epochDay, dayOfMonth, dateString, monthKey ->
+                                viewModel.loadDailyPuzzle(epochDay, dayOfMonth, dateString, monthKey)
+                                currentScreen = AppScreen.GAMEPLAY
+                            },
+                            onBack = {
+                                currentScreen = AppScreen.SAGA_MAP
+                            },
+                            onClaimMilestone = { monthKey, milestoneDays, completions ->
+                                viewModel.claimMonthlyMilestone(monthKey, milestoneDays, completions)
                             }
                         )
                     }

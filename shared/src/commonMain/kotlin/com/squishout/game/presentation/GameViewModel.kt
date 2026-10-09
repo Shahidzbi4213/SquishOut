@@ -1,5 +1,8 @@
 package com.squishout.game.presentation
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -31,6 +34,17 @@ class GameViewModel(
     private val audioPlayer: AudioPlayer? = null,
     private val repository: GameRepository? = null
 ) : ViewModel() {
+
+    var isDailyPuzzleMode by mutableStateOf(false)
+        private set
+    var currentDailyDateString by mutableStateOf("")
+        private set
+    var currentDailyDayOfMonth by mutableStateOf(0)
+        private set
+    var currentDailyEpochDay by mutableStateOf(0L)
+        private set
+    var currentDailyMonthKey by mutableStateOf("")
+        private set
 
     val gameState: StateFlow<GameState> = engine.state
     val sessionState: StateFlow<UserSessionEntity> = (repository?.session ?: MutableStateFlow(UserSessionEntity()))
@@ -78,6 +92,7 @@ class GameViewModel(
     }
 
     fun loadStage(stage: Int) {
+        isDailyPuzzleMode = false
         currentStage = stage
         val tier = com.squishout.engine.model.DifficultyTier.forStage(stage)
         _currentDifficultyTier.value = tier
@@ -134,6 +149,54 @@ class GameViewModel(
             includeBubbleFog = stage >= 12,
             includeKingJelly = tier == com.squishout.engine.model.DifficultyTier.SUPER_HARD || (stage >= 20 && stage % 5 == 0),
             seed = stage * 1000L + 42L
+        )
+        val level = generator.generate(config)
+        engine.loadLevel(level)
+        _activeLaunches.value = emptyList()
+        _wobbleOffsets.value = emptyMap()
+        _blockerRecoils.value = emptyMap()
+        _flyingRewards.value = emptyList()
+        _shatteredObstacles.value = emptyList()
+        _comboCount.value = 0
+        _comboCallout.value = null
+        lastLaunchTimeMs = 0L
+    }
+
+    fun loadDailyPuzzle(
+        epochDay: Long,
+        dayOfMonth: Int,
+        dateString: String,
+        monthKey: String
+    ) {
+        isDailyPuzzleMode = true
+        currentDailyEpochDay = epochDay
+        currentDailyDayOfMonth = dayOfMonth
+        currentDailyDateString = dateString
+        currentDailyMonthKey = monthKey
+        currentStage = 0
+
+        val tier = when (dayOfMonth % 4) {
+            0 -> com.squishout.engine.model.DifficultyTier.BREATHER
+            1 -> com.squishout.engine.model.DifficultyTier.NORMAL
+            2 -> com.squishout.engine.model.DifficultyTier.HARD
+            else -> com.squishout.engine.model.DifficultyTier.SUPER_HARD
+        }
+        _currentDifficultyTier.value = tier
+
+        val config = LevelConfig(
+            stageNumber = 0,
+            gridWidth = 7,
+            gridHeight = 7,
+            jellyCount = 18 + (dayOfMonth % 6),
+            obstacleCount = 2 + (dayOfMonth % 3),
+            maxInitialAwake = if (tier.isChallenging) 3 else 5,
+            difficultyTier = tier,
+            includeMultiCell = true,
+            includeWaterJets = true,
+            includeSchoolingPairs = true,
+            includeBubbleFog = dayOfMonth >= 10,
+            includeKingJelly = tier == com.squishout.engine.model.DifficultyTier.SUPER_HARD,
+            seed = epochDay * 9973L + 1337L
         )
         val level = generator.generate(config)
         engine.loadLevel(level)
@@ -240,14 +303,26 @@ class GameViewModel(
                         playSound(SoundEffect.VICTORY)
                         triggerHaptic(HapticFeedbackType.VICTORY_FANFARE)
                         val finalState = engine.state.value
-                        repository?.recordLevelCompletion(
-                            levelNumber = currentStage,
-                            stars = result.stars,
-                            score = finalState.score,
-                            movesUsed = finalState.movesUsed,
-                            timestampEpoch = 0L,
-                            difficultyTier = _currentDifficultyTier.value
-                        )
+                        if (isDailyPuzzleMode) {
+                            repository?.recordDailyPuzzleCompletion(
+                                epochDay = currentDailyEpochDay,
+                                dateString = currentDailyDateString,
+                                dayOfMonth = currentDailyDayOfMonth,
+                                monthKey = currentDailyMonthKey,
+                                stars = result.stars,
+                                movesUsed = finalState.movesUsed,
+                                score = finalState.score
+                            )
+                        } else {
+                            repository?.recordLevelCompletion(
+                                levelNumber = currentStage,
+                                stars = result.stars,
+                                score = finalState.score,
+                                movesUsed = finalState.movesUsed,
+                                timestampEpoch = 0L,
+                                difficultyTier = _currentDifficultyTier.value
+                            )
+                        }
                     }
                 }
             }
@@ -472,6 +547,21 @@ class GameViewModel(
                         wand = milestone.wandBoosters
                     )
                 }
+                playSound(SoundEffect.VICTORY)
+                triggerHaptic(HapticFeedbackType.VICTORY_FANFARE)
+                onSuccess()
+            }
+        }
+    }
+
+    fun claimMonthlyMilestone(
+        monthKey: String,
+        milestoneDays: Int,
+        monthlyCompletions: Int,
+        onSuccess: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            if (repository?.claimMonthlyMilestone(monthKey, milestoneDays, monthlyCompletions) == true) {
                 playSound(SoundEffect.VICTORY)
                 triggerHaptic(HapticFeedbackType.VICTORY_FANFARE)
                 onSuccess()

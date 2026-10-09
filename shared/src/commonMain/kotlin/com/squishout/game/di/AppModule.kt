@@ -4,6 +4,7 @@ import com.squishout.engine.GameEngine
 import com.squishout.engine.generator.ReverseAssemblyGenerator
 import com.squishout.game.data.DatabaseFactory
 import com.squishout.game.data.SquishDatabase
+import com.squishout.game.data.dao.DailyPuzzleDao
 import com.squishout.game.data.dao.JellySkinDao
 import com.squishout.game.data.dao.LevelDao
 import com.squishout.game.data.dao.UserSessionDao
@@ -19,7 +20,8 @@ val databaseModule = module {
     single<LevelDao> { get<SquishDatabase>().levelDao() }
     single<JellySkinDao> { get<SquishDatabase>().jellySkinDao() }
     single<UserSessionDao> { get<SquishDatabase>().userSessionDao() }
-    single { GameRepository(get(), get(), get()) }
+    single<DailyPuzzleDao> { get<SquishDatabase>().dailyPuzzleDao() }
+    single { GameRepository(get(), get(), get(), get()) }
 }
 
 val engineModule = module {
