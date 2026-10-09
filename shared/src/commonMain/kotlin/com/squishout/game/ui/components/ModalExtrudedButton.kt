@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -323,5 +324,55 @@ fun VibrateWaveIcon(color: Color = Color(0xFF6D4321)) {
             lineTo(w * 0.82f, h * 0.70f)
         }
         drawPath(path = rightWave, color = color, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
+    }
+}
+
+@Composable
+fun MusicNoteIcon(color: Color = Color(0xFF6D4321)) {
+    Canvas(modifier = Modifier.size(20.dp)) {
+        val w = size.width
+        val h = size.height
+
+        // Left Note Head
+        drawOval(
+            color = color,
+            topLeft = Offset(w * 0.12f, h * 0.60f),
+            size = Size(w * 0.30f, h * 0.24f)
+        )
+
+        // Right Note Head
+        drawOval(
+            color = color,
+            topLeft = Offset(w * 0.58f, h * 0.46f),
+            size = Size(w * 0.30f, h * 0.24f)
+        )
+
+        // Left Stem
+        drawLine(
+            color = color,
+            start = Offset(w * 0.38f, h * 0.68f),
+            end = Offset(w * 0.38f, h * 0.18f),
+            strokeWidth = 2.4.dp.toPx(),
+            cap = StrokeCap.Round
+        )
+
+        // Right Stem
+        drawLine(
+            color = color,
+            start = Offset(w * 0.84f, h * 0.54f),
+            end = Offset(w * 0.84f, h * 0.08f),
+            strokeWidth = 2.4.dp.toPx(),
+            cap = StrokeCap.Round
+        )
+
+        // Connecting Beam
+        val beamPath = Path().apply {
+            moveTo(w * 0.36f, h * 0.18f)
+            lineTo(w * 0.86f, h * 0.08f)
+            lineTo(w * 0.86f, h * 0.20f)
+            lineTo(w * 0.36f, h * 0.30f)
+            close()
+        }
+        drawPath(beamPath, color = color, style = Fill)
     }
 }

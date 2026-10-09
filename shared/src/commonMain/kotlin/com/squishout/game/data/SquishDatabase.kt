@@ -17,7 +17,7 @@ import com.squishout.game.data.entity.UserSessionEntity
         JellySkinEntity::class,
         UserSessionEntity::class
     ],
-    version = 2
+    version = 3
 )
 @ConstructedBy(SquishDatabaseConstructor::class)
 abstract class SquishDatabase : RoomDatabase() {

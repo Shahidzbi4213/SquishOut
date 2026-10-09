@@ -27,6 +27,9 @@ interface UserSessionDao {
     @Query("UPDATE user_session SET soundEnabled = :enabled WHERE id = 1")
     suspend fun updateSoundEnabled(enabled: Boolean)
 
+    @Query("UPDATE user_session SET musicEnabled = :enabled WHERE id = 1")
+    suspend fun updateMusicEnabled(enabled: Boolean)
+
     @Query("UPDATE user_session SET hapticsEnabled = :enabled WHERE id = 1")
     suspend fun updateHapticsEnabled(enabled: Boolean)
 

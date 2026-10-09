@@ -13,6 +13,7 @@ data class UserSessionEntity(
     val lastLifeRefillEpoch: Long = 0L,
     val currentStage: Int = 1,
     val soundEnabled: Boolean = true,
+    val musicEnabled: Boolean = true,
     val hapticsEnabled: Boolean = true,
     val loginStreakDays: Int = 1,
     val lastClaimEpochDay: Long = 0L

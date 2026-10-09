@@ -151,8 +151,10 @@ fun GameScreen(
             SettingsModal(
                 isVisible = isSettingsOpen,
                 soundEnabled = session.soundEnabled,
+                musicEnabled = session.musicEnabled,
                 hapticsEnabled = session.hapticsEnabled,
                 onToggleSound = viewModel::toggleSound,
+                onToggleMusic = viewModel::toggleMusic,
                 onToggleHaptics = viewModel::toggleHaptics,
                 onResume = { isSettingsOpen = false },
                 onRestart = {

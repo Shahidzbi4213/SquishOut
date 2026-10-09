@@ -69,6 +69,12 @@ class GameViewModel(
 
     init {
         loadStage(currentStage)
+        viewModelScope.launch {
+            sessionState.collect { session ->
+                audioPlayer?.setSoundEnabled(session.soundEnabled)
+                audioPlayer?.setMusicEnabled(session.musicEnabled)
+            }
+        }
     }
 
     fun loadStage(stage: Int) {
@@ -366,6 +372,14 @@ class GameViewModel(
     fun toggleSound(enabled: Boolean) {
         viewModelScope.launch {
             repository?.toggleSound(enabled)
+            audioPlayer?.setSoundEnabled(enabled)
+        }
+    }
+
+    fun toggleMusic(enabled: Boolean) {
+        viewModelScope.launch {
+            repository?.toggleMusic(enabled)
+            audioPlayer?.setMusicEnabled(enabled)
         }
     }
 
@@ -373,6 +387,16 @@ class GameViewModel(
         viewModelScope.launch {
             repository?.toggleHaptics(enabled)
         }
+    }
+
+    fun startMusic() {
+        if (sessionState.value.musicEnabled) {
+            audioPlayer?.startMusic()
+        }
+    }
+
+    fun stopMusic() {
+        audioPlayer?.stopMusic()
     }
 
     fun purchaseUndoPack(onSuccess: () -> Unit = {}) {
