@@ -4,6 +4,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -12,6 +13,11 @@ import com.squishout.engine.model.ObstacleType
 import com.squishout.game.theme.SquishColors
 
 object TrayRenderer {
+
+    // Pre-allocated scratch paths for zero-allocation obstacle rendering
+    private val scratchMountainPath = Path()
+    private val scratchCrackPath = Path()
+    private val scratchArrowPath = Path()
 
     fun drawTray(
         drawScope: DrawScope,
@@ -135,7 +141,8 @@ object TrayRenderer {
                         cornerRadius = cornerRadius
                     )
                     // Mountain triangle
-                    val path = androidx.compose.ui.graphics.Path().apply {
+                    val path = scratchMountainPath.apply {
+                        reset()
                         moveTo(cx, cy - tileSize * 0.18f)
                         lineTo(cx + tileSize * 0.18f, cy + tileSize * 0.12f)
                         lineTo(cx - tileSize * 0.18f, cy + tileSize * 0.12f)
@@ -200,7 +207,8 @@ object TrayRenderer {
 
                     // Crack fracture lines if damaged (health < maxHealth)
                     if (obstacle.health < obstacle.maxHealth) {
-                        val crackPath = androidx.compose.ui.graphics.Path().apply {
+                        val crackPath = scratchCrackPath.apply {
+                            reset()
                             moveTo(cx - size * 0.28f, cy - size * 0.25f)
                             lineTo(cx - size * 0.05f, cy - size * 0.02f)
                             lineTo(cx + size * 0.08f, cy - size * 0.12f)
@@ -302,7 +310,8 @@ object TrayRenderer {
             val perpX = -dir.dy * arrowWidth * 0.7f
             val perpY = dir.dx * arrowWidth * 0.7f
 
-            val arrowPath = androidx.compose.ui.graphics.Path().apply {
+            val arrowPath = scratchArrowPath.apply {
+                reset()
                 moveTo(tipX, tipY)
                 lineTo(baseX + perpX, baseY + perpY)
                 lineTo(cx, cy)

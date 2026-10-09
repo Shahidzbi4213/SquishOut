@@ -63,6 +63,10 @@ import kotlin.math.PI
 import kotlin.math.hypot
 import kotlin.math.sin
 
+// Pre-allocated scratch paths for zero-allocation HUD, reward token, and trajectory drawing
+private val scratchRewardStarPath = Path()
+private val scratchChevronPath = Path()
+
 @Composable
 fun SkiaBoardView(
     board: Board,
@@ -557,7 +561,8 @@ fun SkiaBoardView(
                 )
 
                 // 4-Point Golden Star Path
-                val sPath = Path().apply {
+                val sPath = scratchRewardStarPath.apply {
+                    reset()
                     moveTo(pos.x, pos.y - starRadius)
                     quadraticTo(pos.x, pos.y, pos.x + starRadius, pos.y)
                     quadraticTo(pos.x, pos.y, pos.x, pos.y + starRadius)
@@ -704,7 +709,8 @@ private fun drawAnticipationTrajectory(
                     while (d < segLen) {
                         val cx = p1.x + ndx * d
                         val cy = p1.y + ndy * d
-                        val chevronPath = Path().apply {
+                        val chevronPath = scratchChevronPath.apply {
+                            reset()
                             moveTo(cx - ndx * arm + perpX * arm, cy - ndy * arm + perpY * arm)
                             lineTo(cx, cy)
                             lineTo(cx - ndx * arm - perpX * arm, cy - ndy * arm - perpY * arm)

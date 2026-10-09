@@ -161,6 +161,13 @@ object JellyRenderer {
         }
     }
 
+    // Pre-allocated scratch paths for zero-allocation 120 FPS rendering
+    private val scratchSnoutPath = Path()
+    private val scratchLeftEyePath = Path()
+    private val scratchRightEyePath = Path()
+    private val scratchMouthPath = Path()
+    private val scratchCrownPath = Path()
+
     private fun drawDirectionalSnout(
         drawScope: DrawScope,
         direction: Direction,
@@ -172,7 +179,8 @@ object JellyRenderer {
         color: Color,
         alpha: Float
     ) {
-        val snoutPath = Path()
+        val snoutPath = scratchSnoutPath
+        snoutPath.reset()
         val snoutSize = tileSize * 0.22f
 
         when (direction) {
@@ -283,11 +291,13 @@ object JellyRenderer {
 
             if (blinkScaleY < 0.35f) {
                 // Closed blink arc
-                val leftBlinkArc = Path().apply {
+                val leftBlinkArc = scratchLeftEyePath.apply {
+                    reset()
                     moveTo(faceCenterX - eyeSpacing - eyeRadius, eyeY)
                     quadraticTo(faceCenterX - eyeSpacing, eyeY + eyeRadius * 0.4f, faceCenterX - eyeSpacing + eyeRadius, eyeY)
                 }
-                val rightBlinkArc = Path().apply {
+                val rightBlinkArc = scratchRightEyePath.apply {
+                    reset()
                     moveTo(faceCenterX + eyeSpacing - eyeRadius, eyeY)
                     quadraticTo(faceCenterX + eyeSpacing, eyeY + eyeRadius * 0.4f, faceCenterX + eyeSpacing + eyeRadius, eyeY)
                 }
@@ -323,18 +333,21 @@ object JellyRenderer {
             }
 
             // Happy smile curve
-            val mouthPath = Path().apply {
+            val mouthPath = scratchMouthPath.apply {
+                reset()
                 moveTo(faceCenterX - tileSize * 0.08f, faceCenterY + tileSize * 0.1f)
                 quadraticTo(faceCenterX, faceCenterY + tileSize * 0.18f, faceCenterX + tileSize * 0.08f, faceCenterY + tileSize * 0.1f)
             }
             drawScope.drawPath(mouthPath, color = darkCharcoal, style = Stroke(width = tileSize * 0.04f, cap = StrokeCap.Round))
         } else {
             // Peaceful sleeping arcs ( ˘◡˘ )
-            val leftArc = Path().apply {
+            val leftArc = scratchLeftEyePath.apply {
+                reset()
                 moveTo(faceCenterX - eyeSpacing - eyeRadius, eyeY)
                 quadraticTo(faceCenterX - eyeSpacing, eyeY - eyeRadius * 0.8f, faceCenterX - eyeSpacing + eyeRadius, eyeY)
             }
-            val rightArc = Path().apply {
+            val rightArc = scratchRightEyePath.apply {
+                reset()
                 moveTo(faceCenterX + eyeSpacing - eyeRadius, eyeY)
                 quadraticTo(faceCenterX + eyeSpacing, eyeY - eyeRadius * 0.8f, faceCenterX + eyeSpacing + eyeRadius, eyeY)
             }
@@ -343,7 +356,8 @@ object JellyRenderer {
             drawScope.drawPath(rightArc, color = darkCharcoal.copy(alpha = 0.7f * alpha), style = Stroke(width = tileSize * 0.04f, cap = StrokeCap.Round))
 
             // Calm slight resting smile
-            val calmMouth = Path().apply {
+            val calmMouth = scratchMouthPath.apply {
+                reset()
                 moveTo(faceCenterX - tileSize * 0.05f, faceCenterY + tileSize * 0.12f)
                 quadraticTo(faceCenterX, faceCenterY + tileSize * 0.15f, faceCenterX + tileSize * 0.05f, faceCenterY + tileSize * 0.12f)
             }
@@ -424,7 +438,8 @@ object JellyRenderer {
         val crownHeight = tileSize * 0.46f
         val cy = crownBottomY + tileSize * 0.04f
 
-        val crownPath = Path().apply {
+        val crownPath = scratchCrownPath.apply {
+            reset()
             moveTo(cx - crownWidth / 2f, cy)
             lineTo(cx - crownWidth * 0.52f, cy - crownHeight * 0.72f) // left peak
             lineTo(cx - crownWidth * 0.2f, cy - crownHeight * 0.38f)  // left valley
