@@ -16,5 +16,6 @@ data class UserSessionEntity(
     val musicEnabled: Boolean = true,
     val hapticsEnabled: Boolean = true,
     val loginStreakDays: Int = 1,
-    val lastClaimEpochDay: Long = 0L
+    val lastClaimEpochDay: Long = 0L,
+    val claimedStarChests: String = ""
 )

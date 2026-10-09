@@ -7,6 +7,7 @@ import com.squishout.game.data.entity.JellySkinEntity
 import com.squishout.game.data.entity.LevelRecordEntity
 import com.squishout.game.data.entity.UserSessionEntity
 import com.squishout.game.data.repository.GameRepository
+import com.squishout.game.data.repository.STAR_CHEST_MILESTONES
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -121,6 +122,11 @@ class FakeUserSessionDao : UserSessionDao {
     override suspend fun updateStreak(streak: Int, epochDay: Long) {
         val cur = session.value ?: UserSessionEntity()
         session.value = cur.copy(loginStreakDays = streak, lastClaimEpochDay = epochDay)
+    }
+
+    override suspend fun updateClaimedStarChests(claimed: String) {
+        val cur = session.value ?: UserSessionEntity()
+        session.value = cur.copy(claimedStarChests = claimed)
     }
 }
 
@@ -299,5 +305,30 @@ class GameRepositoryTest {
         repository.toggleMusic(true)
         testScheduler.advanceUntilIdle()
         assertTrue(repository.session.value.musicEnabled)
+    }
+
+    @Test
+    fun testClaimStarChest() = runTest(testDispatcher) {
+        testScheduler.advanceUntilIdle()
+        val milestone = STAR_CHEST_MILESTONES[0] // 15 stars, 100 candies, 10 gems
+
+        // Fails if not enough stars
+        val failed = repository.claimStarChest(milestone, totalStars = 10)
+        assertFalse(failed)
+
+        // Succeeds if total stars >= 15
+        val initialCandies = repository.session.value.candies
+        val initialGems = repository.session.value.gems
+        val claimed = repository.claimStarChest(milestone, totalStars = 15)
+        testScheduler.advanceUntilIdle()
+        assertTrue(claimed)
+        assertEquals(initialCandies + milestone.candies, repository.session.value.candies)
+        assertEquals(initialGems + milestone.gems, repository.session.value.gems)
+        assertTrue(repository.session.value.claimedStarChests.contains("15"))
+
+        // Cannot claim again
+        val duplicate = repository.claimStarChest(milestone, totalStars = 15)
+        testScheduler.advanceUntilIdle()
+        assertFalse(duplicate)
     }
 }

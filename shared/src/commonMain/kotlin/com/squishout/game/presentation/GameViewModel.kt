@@ -462,6 +462,23 @@ class GameViewModel(
         }
     }
 
+    fun claimStarChest(milestone: com.squishout.game.data.repository.StarChestMilestone, totalStars: Int, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            if (repository?.claimStarChest(milestone, totalStars) == true) {
+                if (milestone.undoBoosters > 0 || milestone.hintBoosters > 0 || milestone.wandBoosters > 0) {
+                    engine.addBoosters(
+                        undo = milestone.undoBoosters,
+                        hint = milestone.hintBoosters,
+                        wand = milestone.wandBoosters
+                    )
+                }
+                playSound(SoundEffect.VICTORY)
+                triggerHaptic(HapticFeedbackType.VICTORY_FANFARE)
+                onSuccess()
+            }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         audioPlayer?.release()
