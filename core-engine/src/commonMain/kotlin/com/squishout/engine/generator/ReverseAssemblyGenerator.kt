@@ -8,6 +8,7 @@ import com.squishout.engine.model.JellyType
 import com.squishout.engine.model.Obstacle
 import com.squishout.engine.model.ObstacleType
 import com.squishout.engine.model.Position
+import com.squishout.engine.model.SunflowerTurnstile
 import com.squishout.engine.model.WaterJet
 import kotlin.random.Random
 
@@ -21,6 +22,8 @@ data class LevelConfig(
     val difficultyTier: DifficultyTier = DifficultyTier.NORMAL,
     val includeMultiCell: Boolean = false,
     val includeWaterJets: Boolean = false,
+    val includeTurnstiles: Boolean = false,
+    val turnstileCount: Int = 0,
     val includeSchoolingPairs: Boolean = false,
     val includeBubbleFog: Boolean = false,
     val includeKingJelly: Boolean = false,
@@ -71,6 +74,7 @@ class ReverseAssemblyGenerator {
         val height = config.gridHeight
         val obstacles = mutableListOf<Obstacle>()
         val waterJets = mutableListOf<WaterJet>()
+        val turnstiles = mutableListOf<SunflowerTurnstile>()
 
         // 1. Place obstacles in interior to avoid blocking entire perimeter
         val interiorPositions = (1 until width - 1).flatMap { x ->
@@ -110,11 +114,31 @@ class ReverseAssemblyGenerator {
             }
         }
 
+        // 2a. Place Sunflower Turnstiles (Directional Raycast Deflectors) if enabled
+        val shouldIncludeTurnstiles = config.includeTurnstiles || config.turnstileCount > 0
+        if (shouldIncludeTurnstiles && interiorPositions.isNotEmpty()) {
+            val count = if (config.turnstileCount > 0) {
+                config.turnstileCount
+            } else {
+                when {
+                    config.stageNumber >= 50 || config.difficultyTier == DifficultyTier.SUPER_HARD -> 3
+                    config.stageNumber >= 20 || config.difficultyTier == DifficultyTier.HARD -> 2
+                    else -> 1
+                }
+            }
+            for (i in 0 until count.coerceAtMost(interiorPositions.size)) {
+                val turnstilePos = interiorPositions.removeAt(0)
+                val initialDir = Direction.entries.random(random)
+                turnstiles.add(SunflowerTurnstile(id = "turnstile_$i", position = turnstilePos, direction = initialDir))
+            }
+        }
+
         var board = Board(
             width = width,
             height = height,
             obstacles = obstacles,
-            waterJets = waterJets
+            waterJets = waterJets,
+            turnstiles = turnstiles
         )
         val placedJellies = mutableListOf<Jelly>()
         var jellyIndex = 0
@@ -132,7 +156,9 @@ class ReverseAssemblyGenerator {
                     Position(topLeft.x, topLeft.y + 1),
                     Position(topLeft.x + 1, topLeft.y + 1)
                 )
-                val allFree = kingTiles.none { board.isTileOccupied(it) }
+                val allFree = kingTiles.none {
+                    board.isTileOccupied(it) || board.getWaterJetAt(it) != null || board.getTurnstileAt(it) != null
+                }
                 if (allFree) {
                     val candidateDirs = Direction.entries.shuffled(random)
                     for (dir in candidateDirs) {
@@ -160,7 +186,9 @@ class ReverseAssemblyGenerator {
         while (placedJellies.size < config.jellyCount && consecutiveFailures < 120) {
             val emptyTiles = (0 until width).flatMap { x ->
                 (0 until height).map { y -> Position(x, y) }
-            }.filterNot { board.isTileOccupied(it) }.shuffled(random)
+            }.filterNot {
+                board.isTileOccupied(it) || board.getWaterJetAt(it) != null || board.getTurnstileAt(it) != null
+            }.shuffled(random)
 
             if (emptyTiles.isEmpty()) break
 
@@ -172,7 +200,9 @@ class ReverseAssemblyGenerator {
                     val isMultiCell = config.includeMultiCell &&
                             (jellyIndex % 4 == 3) &&
                             pos.step(dir.opposite).isWithinBounds(width, height) &&
-                            !board.isTileOccupied(pos.step(dir.opposite))
+                            !board.isTileOccupied(pos.step(dir.opposite)) &&
+                            board.getWaterJetAt(pos.step(dir.opposite)) == null &&
+                            board.getTurnstileAt(pos.step(dir.opposite)) == null
 
                     val tiles = if (isMultiCell) {
                         listOf(pos, pos.step(dir.opposite))
@@ -280,7 +310,10 @@ class ReverseAssemblyGenerator {
     }
 
     /**
-     * Verifies with a Greedy unblocking simulation that the board can be 100% cleared.
+     * Verifies with a forward simulation that the board can be 100% cleared.
+     * Simulates jelly launches, obstacle shattering, fog clearing, and turnstile rotations.
+     * Tries greedy order first, then falls back to backtracking search if turnstile rotations
+     * or blocking requires a specific move order.
      */
     fun verifySolvable(initialBoard: Board): Boolean {
         var current = initialBoard.withUpdatedEyeStates()
@@ -289,23 +322,68 @@ class ReverseAssemblyGenerator {
 
         while (!current.isSolved && steps <= totalJellies * 2) {
             val awake = current.awakeJellies
-            if (awake.isEmpty()) {
-                return false // Deadlock detected
-            }
-            // In a greedy step, remove the first awake jelly and its partner if linked
+            if (awake.isEmpty()) break
             val first = awake.first()
-            val toRemove = if (first.linkedJellyId != null) setOf(first.id, first.linkedJellyId) else setOf(first.id)
-            current = current.removeJellies(toRemove)
+            current = simulateStep(current, first)
             steps++
         }
 
-        return current.isSolved
+        if (current.isSolved) return true
+
+        return searchSolvable(initialBoard.withUpdatedEyeStates(), mutableSetOf())
     }
+
+    private fun simulateStep(board: Board, jelly: Jelly): Board {
+        val partner = jelly.linkedJellyId?.let { board.getJellyById(it) }
+        val toRemove = if (partner != null) setOf(jelly.id, partner.id) else setOf(jelly.id)
+        val traversed = (jelly.tiles + board.getAllEscapeTiles(jelly) +
+                (partner?.let { it.tiles + board.getAllEscapeTiles(it) } ?: emptyList())).toSet()
+        val afterRemoval = board.removeJellies(toRemove)
+        val (afterDamage, _) = afterRemoval.damageObstaclesAdjacentTo(traversed)
+        val (afterFog, _) = afterDamage.clearFogAdjacentTo(traversed)
+        val (afterTurnstiles, _) = afterFog.rotateTurnstiles(traversed)
+        return afterTurnstiles.withUpdatedEyeStates()
+    }
+
+    private fun searchSolvable(
+        board: Board,
+        visited: MutableSet<SearchState>
+    ): Boolean {
+        if (board.isSolved) return true
+        val awake = board.awakeJellies
+        if (awake.isEmpty()) return false
+
+        val stateKey = SearchState(
+            jellyIds = board.jellies.map { it.id }.toSet(),
+            turnstileDirs = board.turnstiles.map { it.direction },
+            obstacleHealths = board.obstacles.map { it.health }
+        )
+        if (!visited.add(stateKey)) return false
+
+        for (jelly in awake) {
+            val nextBoard = simulateStep(board, jelly)
+            if (searchSolvable(nextBoard, visited)) return true
+        }
+
+        return false
+    }
+
+    private data class SearchState(
+        val jellyIds: Set<String>,
+        val turnstileDirs: List<Direction>,
+        val obstacleHealths: List<Int>
+    )
 
     private fun createFallbackLevel(config: LevelConfig): Level {
         val w = config.gridWidth
         val h = config.gridHeight
         val jellies = mutableListOf<Jelly>()
+        val turnstiles = mutableListOf<SunflowerTurnstile>()
+
+        if (config.includeTurnstiles || config.turnstileCount > 0) {
+            turnstiles.add(SunflowerTurnstile("turnstile_0", Position(w / 2, h / 2), Direction.EAST))
+        }
+
         if (config.includeKingJelly && w >= 5 && h >= 5) {
             jellies.add(
                 Jelly(
@@ -327,7 +405,12 @@ class ReverseAssemblyGenerator {
             Jelly("j_2", JellyType.LEMON, Direction.WEST, listOf(Position(0, h - 1))),
             Jelly("j_3", JellyType.KIWI, Direction.SOUTH, listOf(Position(w - 1, h - 1)))
         ))
-        val board = Board(width = w, height = h, jellies = jellies).withUpdatedEyeStates()
+        val board = Board(
+            width = w,
+            height = h,
+            jellies = jellies,
+            turnstiles = turnstiles
+        ).withUpdatedEyeStates()
         return Level(
             stageNumber = config.stageNumber,
             initialBoard = board,

@@ -109,6 +109,7 @@ fun GameScreen(
                         activeLaunchesFlow = viewModel.activeLaunches,
                         wobbleOffsetsFlow = viewModel.wobbleOffsets,
                         blockerRecoilsFlow = viewModel.blockerRecoils,
+                        turnstileRotationsFlow = viewModel.turnstileRotations,
                         flyingRewardsFlow = viewModel.flyingRewards,
                         shatteredObstaclesFlow = viewModel.shatteredObstacles,
                         comboCalloutFlow = viewModel.comboCallout,

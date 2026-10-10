@@ -81,6 +81,7 @@ fun SkiaBoardView(
     activeLaunchesFlow: StateFlow<List<LaunchAnimation>>? = null,
     wobbleOffsetsFlow: StateFlow<Map<String, Float>>? = null,
     blockerRecoilsFlow: StateFlow<Map<Position, Float>>? = null,
+    turnstileRotationsFlow: StateFlow<Map<String, Float>>? = null,
     flyingRewardsFlow: StateFlow<List<FlyingRewardToken>>? = null,
     shatteredObstaclesFlow: StateFlow<List<Obstacle>>? = null,
     comboCalloutFlow: StateFlow<String?>? = null,
@@ -89,10 +90,49 @@ fun SkiaBoardView(
     val activeLaunches by (activeLaunchesFlow?.collectAsState() ?: remember { mutableStateOf(emptyList()) })
     val wobbleOffsets by (wobbleOffsetsFlow?.collectAsState() ?: remember { mutableStateOf(emptyMap()) })
     val blockerRecoils by (blockerRecoilsFlow?.collectAsState() ?: remember { mutableStateOf(emptyMap()) })
+    val externalTurnstileRotations by (turnstileRotationsFlow?.collectAsState() ?: remember { mutableStateOf(emptyMap()) })
     val flyingRewards by (flyingRewardsFlow?.collectAsState() ?: remember { mutableStateOf(emptyList()) })
     val shatteredObstacles by (shatteredObstaclesFlow?.collectAsState() ?: remember { mutableStateOf(emptyList()) })
     val comboCallout by (comboCalloutFlow?.collectAsState() ?: remember { mutableStateOf(null) })
     val biome = com.squishout.game.theme.BiomeTheme.forStage(stage)
+
+    // Local turnstile rotation animation fallback for standalone board usage
+    var localTurnstileRotations by remember { mutableStateOf<Map<String, Float>>(emptyMap()) }
+    val previousTurnstileDirections = remember { mutableMapOf<String, Direction>() }
+
+    LaunchedEffect(board.turnstiles) {
+        if (turnstileRotationsFlow != null) return@LaunchedEffect
+        val newlyRotated = mutableListOf<String>()
+        for (turnstile in board.turnstiles) {
+            val prev = previousTurnstileDirections[turnstile.id]
+            if (prev != null && prev != turnstile.direction) {
+                newlyRotated.add(turnstile.id)
+            }
+            previousTurnstileDirections[turnstile.id] = turnstile.direction
+        }
+        if (newlyRotated.isNotEmpty()) {
+            val durationMs = 320L
+            val startTime = currentTimeMillis()
+            while (true) {
+                val elapsed = currentTimeMillis() - startTime
+                val progress = (elapsed.toFloat() / durationMs).coerceIn(0f, 1f)
+                val bounce = 1f - kotlin.math.exp(-6f * progress) * kotlin.math.cos(10f * progress)
+                val offset = -90f * (1f - bounce)
+                val currentMap = localTurnstileRotations.toMutableMap()
+                for (id in newlyRotated) {
+                    currentMap[id] = offset
+                }
+                localTurnstileRotations = currentMap
+                if (progress >= 1f) break
+                kotlinx.coroutines.delay(16)
+            }
+            val currentMap = localTurnstileRotations.toMutableMap()
+            for (id in newlyRotated) {
+                currentMap.remove(id)
+            }
+            localTurnstileRotations = currentMap
+        }
+    }
 
     // 1. Continuous DrawPhase Animation Clock (Skipping UI recomposition)
     val infiniteTransition = rememberInfiniteTransition(label = "BoardAnimationClock")
@@ -209,6 +249,7 @@ fun SkiaBoardView(
             val currentLaunches = activeLaunches
             val currentWobbles = wobbleOffsets
             val currentRecoils = blockerRecoils
+            val currentTurnstileRotations = if (turnstileRotationsFlow != null) externalTurnstileRotations else localTurnstileRotations
             val currentRewards = flyingRewards
 
             // Calculate cascading drop-in entrance progress
@@ -294,6 +335,23 @@ fun SkiaBoardView(
                         trayPadding + jet.position.y * tileSize + tileSize * 0.08f + dropOffset
                     )
                     TrayRenderer.drawWaterJet(this, jet, topLeft, tileSize)
+                }
+
+                // 2b. Draw Sunflower Turnstiles (90° Directional Raycast Deflectors)
+                for (turnstile in board.turnstiles) {
+                    val dropOffset = getCascadeOffsetY(turnstile.position.y)
+                    val topLeft = Offset(
+                        trayPadding + turnstile.position.x * tileSize + tileSize * 0.08f,
+                        trayPadding + turnstile.position.y * tileSize + tileSize * 0.08f + dropOffset
+                    )
+                    val rotationOffset = currentTurnstileRotations[turnstile.id] ?: 0f
+                    TrayRenderer.drawSunflowerTurnstile(
+                        drawScope = this,
+                        turnstile = turnstile,
+                        topLeft = topLeft,
+                        tileSize = tileSize,
+                        rotationAngle = rotationOffset
+                    )
                 }
 
                 // 3. Draw Obstacles (with Blocker Impact Recoil Shudder and Drop-in Entrance)

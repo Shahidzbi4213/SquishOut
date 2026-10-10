@@ -6,6 +6,7 @@ data class Board(
     val jellies: List<Jelly> = emptyList(),
     val obstacles: List<Obstacle> = emptyList(),
     val waterJets: List<WaterJet> = emptyList(),
+    val turnstiles: List<SunflowerTurnstile> = emptyList(),
     val fogTiles: Set<Position> = emptySet()
 ) {
     // Quick lookup maps
@@ -27,6 +28,10 @@ data class Board(
         waterJets.associateBy { it.position }
     }
 
+    private val tileToTurnstile: Map<Position, SunflowerTurnstile> by lazy {
+        turnstiles.associateBy { it.position }
+    }
+
     fun isTileOccupied(pos: Position): Boolean =
         tileToJelly.containsKey(pos) || tileToObstacle.containsKey(pos)
 
@@ -35,6 +40,8 @@ data class Board(
     fun getObstacleAt(pos: Position): Obstacle? = tileToObstacle[pos]
 
     fun getWaterJetAt(pos: Position): WaterJet? = tileToWaterJet[pos]
+
+    fun getTurnstileAt(pos: Position): SunflowerTurnstile? = tileToTurnstile[pos]
 
     fun isFoggy(pos: Position): Boolean = pos in fogTiles
 
@@ -87,6 +94,10 @@ data class Board(
             val jet = getWaterJetAt(current)
             if (jet != null) {
                 currentDir = jet.direction
+            }
+            val turnstile = getTurnstileAt(current)
+            if (turnstile != null) {
+                currentDir = turnstile.direction
             }
             current = current.step(currentDir)
         }
@@ -228,6 +239,27 @@ data class Board(
         }
         val newBoard = copy(obstacles = updatedObstacles).withUpdatedEyeStates()
         return newBoard to shattered
+    }
+
+    /**
+     * Rotates any turnstile whose position is traversed by the given positions.
+     * Returns the updated board (with updated eye states) and the list of rotated turnstiles with their new directions.
+     */
+    fun rotateTurnstiles(traversedPositions: Set<Position>): Pair<Board, List<SunflowerTurnstile>> {
+        if (turnstiles.isEmpty()) return this to emptyList()
+        val rotated = mutableListOf<SunflowerTurnstile>()
+        val updated = turnstiles.map { turnstile ->
+            if (turnstile.position in traversedPositions) {
+                val next = turnstile.rotateClockwise()
+                rotated.add(next)
+                next
+            } else {
+                turnstile
+            }
+        }
+        if (rotated.isEmpty()) return this to emptyList()
+        val newBoard = copy(turnstiles = updated).withUpdatedEyeStates()
+        return newBoard to rotated
     }
 
     private fun isAdjacent(pos: Position, set: Set<Position>): Boolean {
