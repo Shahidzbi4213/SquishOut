@@ -6,6 +6,7 @@ import com.squishout.engine.model.EyeState
 import com.squishout.engine.model.Jelly
 import com.squishout.engine.model.Obstacle
 import com.squishout.engine.model.Position
+import com.squishout.engine.model.SunflowerTurnstile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,6 +21,7 @@ sealed interface TapResult {
         val stars: Int,
         val shatteredObstacles: List<Obstacle> = emptyList(),
         val clearedFog: Set<Position> = emptySet(),
+        val rotatedTurnstiles: List<SunflowerTurnstile> = emptyList(),
         val partnerJelly: Jelly? = null,
         val partnerExitPath: List<Position>? = null
     ) : TapResult
@@ -107,7 +109,10 @@ class GameEngine {
             // Damage adjacent crackable obstacles
             val (boardAfterDamage, shattered) = afterRemoval.damageObstaclesAdjacentTo(allTraversed)
             // Clear adjacent bubble fog
-            val (updatedBoard, clearedFog) = boardAfterDamage.clearFogAdjacentTo(allTraversed)
+            val (boardAfterFog, clearedFog) = boardAfterDamage.clearFogAdjacentTo(allTraversed)
+            // Rotate traversed turnstiles
+            val (boardAfterTurnstiles, rotated) = boardAfterFog.rotateTurnstiles(allTraversed)
+            val updatedBoard = boardAfterTurnstiles.withUpdatedEyeStates()
 
             val isSolved = updatedBoard.isSolved
             val schoolingBonus = if (partner != null) 150 else 0
@@ -136,6 +141,7 @@ class GameEngine {
                 stars = stars,
                 shatteredObstacles = shattered,
                 clearedFog = clearedFog,
+                rotatedTurnstiles = rotated,
                 partnerJelly = partner,
                 partnerExitPath = partnerExitPath
             )

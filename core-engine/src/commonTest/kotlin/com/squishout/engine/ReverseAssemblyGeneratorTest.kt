@@ -64,6 +64,100 @@ class ReverseAssemblyGeneratorTest {
     }
 
     @Test
+    fun testLevelGenerationWithTurnstiles() {
+        val config = LevelConfig(
+            stageNumber = 25,
+            gridWidth = 6,
+            gridHeight = 6,
+            jellyCount = 12,
+            obstacleCount = 1,
+            includeTurnstiles = true,
+            turnstileCount = 2,
+            seed = 555L
+        )
+        val level = generator.generate(config)
+        val board = level.initialBoard
+
+        assertEquals(2, board.turnstiles.size)
+        for (turnstile in board.turnstiles) {
+            assertTrue(turnstile.id.startsWith("turnstile_"))
+            // Verify interior placement
+            assertTrue(turnstile.position.x in 1 until (config.gridWidth - 1))
+            assertTrue(turnstile.position.y in 1 until (config.gridHeight - 1))
+            // Verify turnstile does not overlap obstacles
+            assertTrue(board.obstacles.none { it.position == turnstile.position })
+            // Verify turnstile does not overlap jellies
+            assertTrue(board.jellies.none { jelly -> turnstile.position in jelly.tiles })
+        }
+
+        assertTrue(board.awakeJellies.isNotEmpty(), "Board with turnstiles must have awake jellies to start")
+        assertTrue(
+            generator.verifySolvable(board),
+            "Generated level with turnstiles must be 100% solvable"
+        )
+    }
+
+    @Test
+    fun testDiverseSeedsSolvabilityWithTurnstiles() {
+        val testConfigs = mutableListOf<LevelConfig>()
+        val gridSizes = listOf(6 to 6, 7 to 7, 8 to 8)
+        val tiers = listOf(
+            DifficultyTier.NORMAL,
+            DifficultyTier.HARD,
+            DifficultyTier.SUPER_HARD,
+            DifficultyTier.BREATHER
+        )
+
+        // 30 diverse seeds covering combinations of grid sizes, tiers, and features
+        for (i in 0 until 30) {
+            val (w, h) = gridSizes[i % gridSizes.size]
+            val tier = tiers[i % tiers.size]
+            val stage = 10 + (i * 3)
+            val jellyCount = when (w) {
+                6 -> 10 + (i % 4)
+                7 -> 16 + (i % 4)
+                else -> 22 + (i % 4)
+            }
+            val seed = 1000L + (i * 73L)
+
+            testConfigs.add(
+                LevelConfig(
+                    stageNumber = stage,
+                    gridWidth = w,
+                    gridHeight = h,
+                    jellyCount = jellyCount,
+                    obstacleCount = 1 + (i % 3),
+                    difficultyTier = tier,
+                    includeMultiCell = (i % 2 == 0),
+                    includeWaterJets = (i % 3 == 0),
+                    includeTurnstiles = true,
+                    includeSchoolingPairs = (i % 4 == 0),
+                    includeBubbleFog = (i % 5 == 0),
+                    seed = seed
+                )
+            )
+        }
+
+        for (config in testConfigs) {
+            val level = generator.generate(config)
+            val board = level.initialBoard
+
+            assertTrue(
+                board.turnstiles.isNotEmpty(),
+                "Seed ${config.seed} (Stage ${config.stageNumber}) should have turnstiles placed"
+            )
+            assertTrue(
+                board.awakeJellies.isNotEmpty(),
+                "Seed ${config.seed} (Stage ${config.stageNumber}) must have awake jellies at start"
+            )
+            assertTrue(
+                generator.verifySolvable(board),
+                "Seed ${config.seed} (Stage ${config.stageNumber}, grid ${config.gridWidth}x${config.gridHeight}) must be 100% solvable"
+            )
+        }
+    }
+
+    @Test
     fun testSawtoothTierHelper() {
         assertEquals(DifficultyTier.NORMAL, DifficultyTier.forStage(1))
         assertEquals(DifficultyTier.NORMAL, DifficultyTier.forStage(2))

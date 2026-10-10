@@ -5,11 +5,16 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
+import com.squishout.engine.model.Direction
 import com.squishout.engine.model.Obstacle
 import com.squishout.engine.model.ObstacleType
+import com.squishout.engine.model.SunflowerTurnstile
 import com.squishout.game.theme.SquishColors
 
 object TrayRenderer {
@@ -18,9 +23,15 @@ object TrayRenderer {
     private val scratchMountainPath = Path()
     private val scratchCrackPath = Path()
     private val scratchArrowPath = Path()
+    private val scratchPetalPath = Path()
+    private val scratchPetalInnerPath = Path()
+    private val scratchTurnstileChevronPath = Path()
+    private val scratchSmilePath = Path()
 
     // Pre-allocated color lists and geometries for zero-allocation rendering
     private val waterJetColors = listOf(Color(0xFFBAE6FD), Color(0xFF38BDF8), Color(0xFF0284C7))
+    private val sunflowerSeedColors = listOf(Color(0xFF92400E), Color(0xFF78350F))
+    private val sunflowerSeedDash = PathEffect.dashPathEffect(floatArrayOf(4f, 6f), 0f)
     private val fogBubbleColors = listOf(
         Color(0xFFFFFFFF).copy(alpha = 0.92f),
         Color(0xFFE0F2FE).copy(alpha = 0.88f),
@@ -389,6 +400,174 @@ object TrayRenderer {
                 radius = r * 0.15f,
                 center = Offset(cx, cy)
             )
+        }
+    }
+
+    fun drawSunflowerTurnstile(
+        drawScope: DrawScope,
+        turnstile: SunflowerTurnstile,
+        topLeft: Offset,
+        tileSize: Float,
+        rotationAngle: Float = 0f
+    ) {
+        val padding = tileSize * 0.08f
+        val size = tileSize - padding * 2
+        val cx = topLeft.x + size / 2f
+        val cy = topLeft.y + size / 2f
+        val r = size * 0.44f
+
+        drawScope.apply {
+            // 1. Outer soft shadow / recessed well ring (tray floor socket)
+            drawCircle(
+                color = Color(0xFF78350F).copy(alpha = 0.22f),
+                radius = r + tileSize * 0.035f,
+                center = Offset(cx, cy + tileSize * 0.02f)
+            )
+            drawCircle(
+                color = Color(0xFFFEF3C7).copy(alpha = 0.45f),
+                radius = r + tileSize * 0.01f,
+                center = Offset(cx, cy)
+            )
+            drawCircle(
+                color = Color(0xFFD97706).copy(alpha = 0.30f),
+                radius = r + tileSize * 0.02f,
+                center = Offset(cx, cy),
+                style = Stroke(width = tileSize * 0.025f)
+            )
+
+            // Base direction angle (NORTH = 0°, EAST = 90°, SOUTH = 180°, WEST = 270°)
+            val baseDegrees = when (turnstile.direction) {
+                Direction.NORTH -> 0f
+                Direction.EAST -> 90f
+                Direction.SOUTH -> 180f
+                Direction.WEST -> 270f
+            }
+            val totalDegrees = baseDegrees + rotationAngle
+
+            // Rotate blooming petals, seed disc, and directional indicator clockwise
+            rotate(degrees = totalDegrees, pivot = Offset(cx, cy)) {
+                // 2. Cute blooming sunflower petals: radial array of golden/amber petals (#F59E0B, #FBBF24, #FDE68A)
+                val petalCount = 12
+                val angleStep = 360f / petalCount
+                val topY = cy - r * 0.98f
+                val bottomY = cy - r * 0.40f
+                val halfWidth = r * 0.17f
+                val midY = topY + (bottomY - topY) * 0.40f
+
+                val innerTopY = topY + (bottomY - topY) * 0.12f
+                val innerHalfWidth = halfWidth * 0.65f
+                val innerMidY = innerTopY + (bottomY - innerTopY) * 0.45f
+
+                for (i in 0 until petalCount) {
+                    rotate(degrees = i * angleStep, pivot = Offset(cx, cy)) {
+                        // Outer golden petal (#F59E0B)
+                        scratchPetalPath.apply {
+                            reset()
+                            moveTo(cx, topY)
+                            cubicTo(cx + halfWidth, midY, cx + halfWidth * 0.7f, bottomY, cx, bottomY)
+                            cubicTo(cx - halfWidth * 0.7f, bottomY, cx - halfWidth, midY, cx, topY)
+                            close()
+                        }
+                        drawPath(scratchPetalPath, color = Color(0xFFF59E0B), style = Fill)
+
+                        // Inner warm amber highlight (#FBBF24)
+                        scratchPetalInnerPath.apply {
+                            reset()
+                            moveTo(cx, innerTopY)
+                            cubicTo(cx + innerHalfWidth, innerMidY, cx + innerHalfWidth * 0.6f, bottomY, cx, bottomY)
+                            cubicTo(cx - innerHalfWidth * 0.6f, bottomY, cx - innerHalfWidth, innerMidY, cx, innerTopY)
+                            close()
+                        }
+                        drawPath(scratchPetalInnerPath, color = Color(0xFFFBBF24), style = Fill)
+
+                        // Petal tip accent (#FDE68A)
+                        drawLine(
+                            color = Color(0xFFFDE68A),
+                            start = Offset(cx, topY + r * 0.05f),
+                            end = Offset(cx, topY + (bottomY - topY) * 0.35f),
+                            strokeWidth = tileSize * 0.02f,
+                            cap = StrokeCap.Round
+                        )
+                    }
+                }
+
+                // 3. Center seed disc: warm honey-amber radial gradient disc (#78350F, #92400E)
+                val seedR = r * 0.48f
+                drawCircle(
+                    brush = androidx.compose.ui.graphics.Brush.radialGradient(
+                        colors = sunflowerSeedColors,
+                        center = Offset(cx - seedR * 0.2f, cy - seedR * 0.2f),
+                        radius = seedR * 1.15f
+                    ),
+                    radius = seedR,
+                    center = Offset(cx, cy)
+                )
+
+                // Subtle seed disc outer rim
+                drawCircle(
+                    color = Color(0xFF451A03).copy(alpha = 0.40f),
+                    radius = seedR,
+                    center = Offset(cx, cy),
+                    style = Stroke(width = tileSize * 0.025f)
+                )
+
+                // Dashed ring of golden seed flecks (#FDE68A)
+                drawCircle(
+                    color = Color(0xFFFDE68A).copy(alpha = 0.45f),
+                    radius = seedR * 0.82f,
+                    center = Offset(cx, cy),
+                    style = Stroke(width = tileSize * 0.02f, pathEffect = sunflowerSeedDash)
+                )
+
+                // 4. Direction indicator: cheerful leaf/chevron & eye-pupils pointing in direction
+                // Leaf/chevron pointing forward (up in local coordinates)
+                scratchTurnstileChevronPath.apply {
+                    reset()
+                    moveTo(cx, cy - seedR * 0.65f)
+                    lineTo(cx + seedR * 0.36f, cy - seedR * 0.08f)
+                    lineTo(cx + seedR * 0.22f, cy + seedR * 0.05f)
+                    lineTo(cx, cy - seedR * 0.20f)
+                    lineTo(cx - seedR * 0.22f, cy + seedR * 0.05f)
+                    lineTo(cx - seedR * 0.36f, cy - seedR * 0.08f)
+                    close()
+                }
+                drawPath(scratchTurnstileChevronPath, color = Color.White.copy(alpha = 0.95f), style = Fill)
+                drawPath(
+                    scratchTurnstileChevronPath,
+                    color = Color(0xFFFEF3C7),
+                    style = Stroke(width = tileSize * 0.015f)
+                )
+
+                // Cute cheerful eye-pupils looking eagerly forward
+                val eyeSpacingX = seedR * 0.26f
+                val eyeY = cy + seedR * 0.32f
+                val eyeR = seedR * 0.17f
+                val pupilR = seedR * 0.09f
+                val pupilOffsetY = -eyeR * 0.28f
+
+                // Left eye
+                drawCircle(color = Color.White, radius = eyeR, center = Offset(cx - eyeSpacingX, eyeY))
+                drawCircle(color = Color(0xFF451A03), radius = pupilR, center = Offset(cx - eyeSpacingX, eyeY + pupilOffsetY))
+                drawCircle(color = Color.White, radius = pupilR * 0.38f, center = Offset(cx - eyeSpacingX - pupilR * 0.3f, eyeY + pupilOffsetY - pupilR * 0.3f))
+
+                // Right eye
+                drawCircle(color = Color.White, radius = eyeR, center = Offset(cx + eyeSpacingX, eyeY))
+                drawCircle(color = Color(0xFF451A03), radius = pupilR, center = Offset(cx + eyeSpacingX, eyeY + pupilOffsetY))
+                drawCircle(color = Color.White, radius = pupilR * 0.38f, center = Offset(cx + eyeSpacingX - pupilR * 0.3f, eyeY + pupilOffsetY - pupilR * 0.3f))
+
+                // Cheerful tiny smile
+                val smilePath = scratchSmilePath.apply {
+                    reset()
+                    val smileY = eyeY + eyeR * 0.68f
+                    moveTo(cx - seedR * 0.12f, smileY)
+                    cubicTo(
+                        cx - seedR * 0.06f, smileY + seedR * 0.08f,
+                        cx + seedR * 0.06f, smileY + seedR * 0.08f,
+                        cx + seedR * 0.12f, smileY
+                    )
+                }
+                drawPath(smilePath, color = Color(0xFF451A03), style = Stroke(width = tileSize * 0.02f, cap = StrokeCap.Round))
+            }
         }
     }
 }

@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.sin
 
 class GameViewModel(
-    private val engine: GameEngine = GameEngine(),
+    internal val engine: GameEngine = GameEngine(),
     private val generator: ReverseAssemblyGenerator = ReverseAssemblyGenerator(),
     private val audioPlayer: AudioPlayer? = null,
     private val repository: GameRepository? = null
@@ -62,6 +62,9 @@ class GameViewModel(
 
     private val _blockerRecoils = MutableStateFlow<Map<Position, Float>>(emptyMap())
     val blockerRecoils: StateFlow<Map<Position, Float>> = _blockerRecoils.asStateFlow()
+
+    private val _turnstileRotations = MutableStateFlow<Map<String, Float>>(emptyMap())
+    val turnstileRotations: StateFlow<Map<String, Float>> = _turnstileRotations.asStateFlow()
 
     private val _flyingRewards = MutableStateFlow<List<FlyingRewardToken>>(emptyList())
     val flyingRewards: StateFlow<List<FlyingRewardToken>> = _flyingRewards.asStateFlow()
@@ -155,6 +158,7 @@ class GameViewModel(
         _activeLaunches.value = emptyList()
         _wobbleOffsets.value = emptyMap()
         _blockerRecoils.value = emptyMap()
+        _turnstileRotations.value = emptyMap()
         _flyingRewards.value = emptyList()
         _shatteredObstacles.value = emptyList()
         _comboCount.value = 0
@@ -203,6 +207,7 @@ class GameViewModel(
         _activeLaunches.value = emptyList()
         _wobbleOffsets.value = emptyMap()
         _blockerRecoils.value = emptyMap()
+        _turnstileRotations.value = emptyMap()
         _flyingRewards.value = emptyList()
         _shatteredObstacles.value = emptyList()
         _comboCount.value = 0
@@ -272,6 +277,10 @@ class GameViewModel(
 
                 // Animate launch (handles single or symbiotic partner pair)
                 animateLaunch(result)
+
+                if (result.rotatedTurnstiles.isNotEmpty()) {
+                    animateTurnstileRotations(result.rotatedTurnstiles)
+                }
 
                 if (result.isSolved) {
                     viewModelScope.launch {
@@ -413,6 +422,32 @@ class GameViewModel(
             if (blockerPosition != null) {
                 _blockerRecoils.value = _blockerRecoils.value - blockerPosition
             }
+        }
+    }
+
+    private fun animateTurnstileRotations(rotatedTurnstiles: List<com.squishout.engine.model.SunflowerTurnstile>) {
+        viewModelScope.launch {
+            val ids = rotatedTurnstiles.map { it.id }
+            val durationMs = 320L
+            val startTime = com.squishout.game.util.currentTimeMillis()
+            while (true) {
+                val elapsed = com.squishout.game.util.currentTimeMillis() - startTime
+                val progress = (elapsed.toFloat() / durationMs).coerceIn(0f, 1f)
+                val bounce = 1f - kotlin.math.exp(-6f * progress) * kotlin.math.cos(10f * progress)
+                val offset = -90f * (1f - bounce)
+                val current = _turnstileRotations.value.toMutableMap()
+                for (id in ids) {
+                    current[id] = offset
+                }
+                _turnstileRotations.value = current
+                if (progress >= 1f) break
+                delay(16)
+            }
+            val current = _turnstileRotations.value.toMutableMap()
+            for (id in ids) {
+                current.remove(id)
+            }
+            _turnstileRotations.value = current
         }
     }
 
