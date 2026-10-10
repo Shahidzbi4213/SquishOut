@@ -250,6 +250,14 @@ The repository maintains **100% test coverage** for all game logic, level genera
 
 ---
 
+## 👨‍💻 Author
+
+Developed by **[Shahid Iqbal](https://shahid-iqbal.dev/)** — Senior Android & Kotlin Multiplatform Engineer.
+
+Connect: [Portfolio](https://shahid-iqbal.dev/) • [LinkedIn](https://www.linkedin.com/in/shahidzbi/) • [GitHub](https://github.com/Shahidzbi4213) • [X (Twitter)](https://x.com/shahidzbi)
+
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
