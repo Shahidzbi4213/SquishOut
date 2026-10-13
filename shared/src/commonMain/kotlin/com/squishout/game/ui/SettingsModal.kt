@@ -274,7 +274,7 @@ private fun ArcadeSettingRow(
             // Recessed soft cream container
             .background(Color(0xFFEDE3D2))
             .border(width = 1.dp, color = Color(0xFFE2D4BF), shape = rowShape)
-            .padding(horizontal = 14.dp, vertical = 9.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(

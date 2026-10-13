@@ -498,13 +498,16 @@ fun SkiaBoardView(
 
             // 6. Draw Active Launching Jellies (Droplets, Gummy Wake Trail, Rim Breach Splash, Fever Climax)
             for (launch in currentLaunches) {
+                val launchProgress = launch.currentProgress(now)
+                val launchEasedProgress = launch.easedProgressAt(now)
+                val launchAlpha = launch.alphaAt(now)
                 val isDeflected = launch.exitPath.size >= 2
                 val currentOffset: Offset
                 val currentDir: Direction
 
                 if (isDeflected) {
                     val totalSegments = (launch.exitPath.size - 1).coerceAtLeast(1)
-                    val rawIndex = launch.easedProgress * totalSegments
+                    val rawIndex = launchEasedProgress * totalSegments
                     val segIndex = rawIndex.toInt().coerceIn(0, totalSegments - 1)
                     val subProgress = (rawIndex - segIndex).coerceIn(0f, 1f)
 
@@ -521,7 +524,9 @@ fun SkiaBoardView(
 
                     val dx = p2.x - p1.x
                     val dy = p2.y - p1.y
-                    currentDir = when {
+                    currentDir = if (dx == 0 && dy == 0) {
+                        launch.jelly.direction
+                    } else when {
                         dx > 0 -> Direction.EAST
                         dx < 0 -> Direction.WEST
                         dy > 0 -> Direction.SOUTH
@@ -535,7 +540,7 @@ fun SkiaBoardView(
 
                     val maxDimension = maxOf(board.width, board.height)
                     val exitDistance = tileSize * (maxDimension + 4f)
-                    val traveled = exitDistance * launch.easedProgress
+                    val traveled = exitDistance * launchEasedProgress
 
                     currentOffset = Offset(
                         startX + launch.jelly.direction.dx * traveled,
@@ -545,12 +550,13 @@ fun SkiaBoardView(
                 }
 
                 val isHorizontal = currentDir == Direction.EAST || currentDir == Direction.WEST
-                val scaleX = if (isHorizontal) launch.scaleAlongDir else launch.scalePerpendicular
-                val scaleY = if (isHorizontal) launch.scalePerpendicular else launch.scaleAlongDir
+                val scaleX = if (isHorizontal) launch.scaleAlongDirAt(now) else launch.scalePerpendicularAt(now)
+                val scaleY = if (isHorizontal) launch.scalePerpendicularAt(now) else launch.scaleAlongDirAt(now)
                 val jellyColor = JellyRenderer.getPalette(launch.jelly.type).first
+                val directedJelly = if (launch.jelly.direction != currentDir) launch.jelly.copy(direction = currentDir) else launch.jelly
 
                 // A0. Takeoff Gelatin Splatter Wave Ring
-                if (launch.progress in 0.01f..0.15f && firedTakeoffRings.add(launch.jelly.id)) {
+                if (launchProgress in 0.01f..0.15f && firedTakeoffRings.add(launch.jelly.id)) {
                     val minX = launch.jelly.tiles.minOf { it.x }
                     val minY = launch.jelly.tiles.minOf { it.y }
                     val takeoffX = trayPadding + minX * tileSize + tileSize / 2f
@@ -564,7 +570,7 @@ fun SkiaBoardView(
                 }
 
                 // A. Backward Rocket Juice Droplets (exhaust stream)
-                if (launch.progress in 0.08f..0.7f) {
+                if (launchProgress in 0.08f..0.7f) {
                     particleSystem.spawnJuiceDroplets(
                         originX = currentOffset.x + tileSize / 2f,
                         originY = currentOffset.y + tileSize / 2f,
@@ -575,7 +581,7 @@ fun SkiaBoardView(
                 }
 
                 // B. Tray Rim Breach Splash
-                if (launch.progress >= 0.72f && firedRimSplashes.add(launch.jelly.id)) {
+                if (launchProgress >= 0.72f && firedRimSplashes.add(launch.jelly.id)) {
                     particleSystem.spawnRimSplash(
                         originX = currentOffset.x + tileSize / 2f,
                         originY = currentOffset.y + tileSize / 2f,
@@ -593,41 +599,41 @@ fun SkiaBoardView(
                 }
 
                 // C. Gummy Motion Blur Wake (trailing ghost silhouettes)
-                if (launch.progress in 0.08f..0.85f) {
+                if (launchProgress in 0.08f..0.85f) {
                     val trail1Dist = tileSize * 0.32f
                     val trail1 = Offset(currentOffset.x - currentDir.dx * trail1Dist, currentOffset.y - currentDir.dy * trail1Dist)
                     JellyRenderer.drawJelly(
                         drawScope = this,
-                        jelly = launch.jelly,
+                        jelly = directedJelly,
                         topLeft = trail1,
                         tileSize = tileSize,
                         scaleX = scaleX * 0.94f,
                         scaleY = scaleY * 0.94f,
-                        alpha = launch.alpha * 0.32f
+                        alpha = launchAlpha * 0.32f
                     )
 
                     val trail2Dist = tileSize * 0.65f
                     val trail2 = Offset(currentOffset.x - currentDir.dx * trail2Dist, currentOffset.y - currentDir.dy * trail2Dist)
                     JellyRenderer.drawJelly(
                         drawScope = this,
-                        jelly = launch.jelly,
+                        jelly = directedJelly,
                         topLeft = trail2,
                         tileSize = tileSize,
                         scaleX = scaleX * 0.86f,
                         scaleY = scaleY * 0.86f,
-                        alpha = launch.alpha * 0.16f
+                        alpha = launchAlpha * 0.16f
                     )
                 }
 
                 // D. Primary High-Speed Jelly Body
                 JellyRenderer.drawJelly(
                     drawScope = this,
-                    jelly = launch.jelly,
+                    jelly = directedJelly,
                     topLeft = currentOffset,
                     tileSize = tileSize,
                     scaleX = scaleX,
                     scaleY = scaleY,
-                    alpha = launch.alpha
+                    alpha = launchAlpha
                 )
             }
 
@@ -830,17 +836,18 @@ private fun drawAnticipationTrajectory(
     trayPadding: Float,
     animClockSeconds: Float
 ) {
-    val headPos = jelly.headPosition
-    val headCenter = Offset(
-        trayPadding + headPos.x * tileSize + tileSize / 2f,
-        trayPadding + headPos.y * tileSize + tileSize / 2f
+    val leadingTiles = board.getLeadingTiles(jelly)
+    val anchorLead = leadingTiles.minByOrNull { it.x + it.y } ?: jelly.headPosition
+    val leadCenter = Offset(
+        trayPadding + anchorLead.x * tileSize + tileSize / 2f,
+        trayPadding + anchorLead.y * tileSize + tileSize / 2f
     )
     val escapePath = board.getEscapePath(jelly)
     val canEscape = board.canJellyEscape(jelly)
 
     var blockerPos: Position? = null
     val waypoints = mutableListOf<Offset>()
-    waypoints.add(headCenter)
+    waypoints.add(leadCenter)
 
     for (pos in escapePath) {
         val waypointCenter = Offset(

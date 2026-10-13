@@ -354,11 +354,15 @@ class GameViewModel(
     private fun animateLaunch(result: TapResult.Launched) {
         viewModelScope.launch {
             val isClimax = result.isSolved
+            val durationMs = if (isClimax) 560L else 340L
+            val startTime = com.squishout.game.util.currentTimeMillis()
             val anim1 = LaunchAnimation(
                 jelly = result.jelly,
                 exitPath = result.exitPath,
                 progress = 0f,
-                isFeverClimax = isClimax
+                isFeverClimax = isClimax,
+                startTimeMillis = startTime,
+                durationMillis = durationMs
             )
             val partner = result.partnerJelly
             val partnerExit = result.partnerExitPath
@@ -367,7 +371,9 @@ class GameViewModel(
                     jelly = partner,
                     exitPath = partnerExit,
                     progress = 0f,
-                    isFeverClimax = isClimax
+                    isFeverClimax = isClimax,
+                    startTimeMillis = startTime,
+                    durationMillis = durationMs
                 )
             } else null
 
@@ -379,19 +385,8 @@ class GameViewModel(
             val newAnims = listOfNotNull(anim1, partnerAnim)
             _activeLaunches.value = _activeLaunches.value + newAnims
 
-            // Final squishy gets dramatic slow-motion time dilation
-            val durationMs = if (isClimax) 560L else 340L
-            val startTime = com.squishout.game.util.currentTimeMillis()
-            while (true) {
-                val elapsed = com.squishout.game.util.currentTimeMillis() - startTime
-                val rawProgress = (elapsed.toFloat() / durationMs).coerceIn(0f, 1f)
-                val progress = rawProgress * rawProgress
-                _activeLaunches.value = _activeLaunches.value.map {
-                    if (it.jelly.id in launchingIds) it.copy(progress = progress) else it
-                }
-                if (rawProgress >= 1f) break
-                delay(16)
-            }
+            // Smooth draw-phase interpolation in SkiaBoardView eliminates 60 FPS allocation churn
+            delay(durationMs + 20L)
 
             // Remove finished launch animation
             _activeLaunches.value = _activeLaunches.value.filterNot { it.jelly.id in launchingIds }
@@ -407,20 +402,29 @@ class GameViewModel(
                 val progress = (elapsed.toFloat() / durationMs).coerceIn(0f, 1f)
                 // 3 full sine waves with decay
                 val offset = sin(progress * 6f * kotlin.math.PI.toFloat()) * (1f - progress)
-                _wobbleOffsets.value = _wobbleOffsets.value + (jellyId to offset)
+                val nextWobble = _wobbleOffsets.value.toMutableMap()
+                nextWobble[jellyId] = offset
+                _wobbleOffsets.value = nextWobble
 
                 if (blockerPosition != null) {
                     // Blocker impact recoil shudder
                     val recoil = sin(progress * 8f * kotlin.math.PI.toFloat()) * (1f - progress) * 0.75f
-                    _blockerRecoils.value = _blockerRecoils.value + (blockerPosition to recoil)
+                    val nextRecoil = _blockerRecoils.value.toMutableMap()
+                    nextRecoil[blockerPosition] = recoil
+                    _blockerRecoils.value = nextRecoil
                 }
 
                 if (progress >= 1f) break
                 delay(16)
             }
-            _wobbleOffsets.value = _wobbleOffsets.value - jellyId
+            val cleanWobble = _wobbleOffsets.value.toMutableMap()
+            cleanWobble.remove(jellyId)
+            _wobbleOffsets.value = cleanWobble
+
             if (blockerPosition != null) {
-                _blockerRecoils.value = _blockerRecoils.value - blockerPosition
+                val cleanRecoil = _blockerRecoils.value.toMutableMap()
+                cleanRecoil.remove(blockerPosition)
+                _blockerRecoils.value = cleanRecoil
             }
         }
     }
