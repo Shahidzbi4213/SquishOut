@@ -207,7 +207,8 @@ class GameEngine {
     }
 
     /**
-     * Booster 3: Magic Wand. Vaporizes one asleep blocker jelly.
+     * Booster 3: Magic Wand. Vaporizes one blocker jelly.
+     * Prioritizes asleep blocker jellies; if none are asleep, falls back to any remaining jelly.
      */
     fun useMagicWand(): Jelly? {
         val current = _state.value
@@ -216,15 +217,28 @@ class GameEngine {
         }
 
         val asleepJellies = current.board.jellies.filter { it.eyeState == EyeState.ASLEEP }
-        val target = asleepJellies.firstOrNull() ?: return null
+        // Prioritize an asleep jelly that is directly blocking another asleep jelly
+        val blockerTarget = asleepJellies.firstOrNull { potentialBlocker ->
+            asleepJellies.any { asleep ->
+                findFirstBlocker(asleep, current.board)?.let { pos ->
+                    potentialBlocker.tiles.contains(pos)
+                } == true
+            }
+        }
+        val target = blockerTarget ?: asleepJellies.firstOrNull() ?: current.board.jellies.firstOrNull() ?: return null
 
         val updatedBoard = current.board.removeJelly(target.id)
+        val isSolved = updatedBoard.isSolved
+        val stars = if (isSolved) calculateStars(current.movesUsed, current.optimalMoves) else 0
+
         _state.update { prev ->
             prev.copy(
                 board = updatedBoard,
                 wandCount = prev.wandCount - 1,
                 highlightedJellyId = null,
-                isCompleted = updatedBoard.isSolved,
+                score = prev.score + 100,
+                isCompleted = isSolved,
+                starsEarned = if (isSolved) stars else prev.starsEarned,
                 history = prev.history + prev.board
             )
         }

@@ -95,23 +95,24 @@ class GameViewModel(
     }
 
     fun loadStage(stage: Int) {
+        val clampedStage = stage.coerceIn(1, 150)
         isDailyPuzzleMode = false
-        currentStage = stage
-        val tier = com.squishout.engine.model.DifficultyTier.forStage(stage)
+        currentStage = clampedStage
+        val tier = com.squishout.engine.model.DifficultyTier.forStage(clampedStage)
         _currentDifficultyTier.value = tier
 
         val gridSize = when {
-            stage <= 15 -> 6
-            stage <= 45 -> 7
+            clampedStage <= 15 -> 6
+            clampedStage <= 45 -> 7
             else -> 8
         }
 
         // Base jelly density according to grid size and progression
         val baseJellies = when {
-            stage <= 5 -> 6 + stage * 2 // 8 to 16
-            stage <= 15 -> 14 + (stage - 5) // 15 to 24
-            stage <= 45 -> 20 + ((stage - 15) * 0.4).toInt() // 20 to 32
-            else -> 28 + ((stage - 45) * 0.1).toInt().coerceAtMost(10) // 28 to 38
+            clampedStage <= 5 -> 6 + clampedStage * 2 // 8 to 16
+            clampedStage <= 15 -> 14 + (clampedStage - 5) // 15 to 24
+            clampedStage <= 45 -> 20 + ((clampedStage - 15) * 0.4).toInt() // 20 to 32
+            else -> 28 + ((clampedStage - 45) * 0.1).toInt().coerceAtMost(10) // 28 to 38
         }
 
         val adjustedJellies = when (tier) {
@@ -122,11 +123,11 @@ class GameViewModel(
         }
 
         val baseObstacles = when {
-            stage <= 3 -> 0
-            stage <= 10 -> 1
-            stage <= 25 -> 2
-            stage <= 50 -> 3
-            stage <= 90 -> 4
+            clampedStage <= 3 -> 0
+            clampedStage <= 10 -> 1
+            clampedStage <= 25 -> 2
+            clampedStage <= 50 -> 3
+            clampedStage <= 90 -> 4
             else -> 5
         }
         val adjustedObstacles = if (tier.isChallenging) baseObstacles + 1 else baseObstacles
@@ -139,19 +140,19 @@ class GameViewModel(
         }
 
         val config = LevelConfig(
-            stageNumber = stage,
+            stageNumber = clampedStage,
             gridWidth = gridSize,
             gridHeight = gridSize,
             jellyCount = adjustedJellies,
             obstacleCount = adjustedObstacles,
             maxInitialAwake = maxInitialAwake,
             difficultyTier = tier,
-            includeMultiCell = stage >= 3,
-            includeWaterJets = stage >= 5,
-            includeSchoolingPairs = stage >= 7,
-            includeBubbleFog = stage >= 12,
-            includeKingJelly = tier == com.squishout.engine.model.DifficultyTier.SUPER_HARD || (stage >= 20 && stage % 5 == 0),
-            seed = stage * 1000L + 42L
+            includeMultiCell = clampedStage >= 3,
+            includeWaterJets = clampedStage >= 5,
+            includeSchoolingPairs = clampedStage >= 7,
+            includeBubbleFog = clampedStage >= 12,
+            includeKingJelly = tier == com.squishout.engine.model.DifficultyTier.SUPER_HARD || (clampedStage >= 20 && clampedStage % 5 == 0),
+            seed = clampedStage * 1000L + 42L
         )
         val level = generator.generate(config)
         engine.loadLevel(level)
@@ -471,11 +472,48 @@ class GameViewModel(
         if (removed != null) {
             playSound(SoundEffect.POP)
             triggerHaptic(HapticFeedbackType.LIGHT_CLICK)
+            val currentState = engine.state.value
+            if (currentState.isCompleted) {
+                playSound(SoundEffect.VICTORY)
+                triggerHaptic(HapticFeedbackType.VICTORY_FANFARE)
+                val finalState = currentState
+                if (isDailyPuzzleMode) {
+                    viewModelScope.launch {
+                        repository?.recordDailyPuzzleCompletion(
+                            epochDay = currentDailyEpochDay,
+                            dateString = currentDailyDateString,
+                            dayOfMonth = currentDailyDayOfMonth,
+                            monthKey = currentDailyMonthKey,
+                            stars = finalState.starsEarned,
+                            movesUsed = finalState.movesUsed,
+                            score = finalState.score
+                        )
+                    }
+                } else {
+                    viewModelScope.launch {
+                        repository?.recordLevelCompletion(
+                            levelNumber = currentStage,
+                            stars = finalState.starsEarned,
+                            score = finalState.score,
+                            movesUsed = finalState.movesUsed,
+                            timestampEpoch = 0L,
+                            difficultyTier = _currentDifficultyTier.value
+                        )
+                        if (currentStage == 1) {
+                            repository?.completeTutorial()
+                        }
+                    }
+                }
+            }
         }
     }
 
     fun nextLevel() {
-        loadStage(currentStage + 1)
+        if (currentStage < 150) {
+            loadStage(currentStage + 1)
+        } else {
+            loadStage(150)
+        }
     }
 
     fun restartLevel() {
