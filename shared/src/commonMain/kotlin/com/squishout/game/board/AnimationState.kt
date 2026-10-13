@@ -10,42 +10,72 @@ data class LaunchAnimation(
     val jelly: Jelly,
     val exitPath: List<Position> = emptyList(),
     val progress: Float = 0f,
-    val isFeverClimax: Boolean = false
+    val isFeverClimax: Boolean = false,
+    val startTimeMillis: Long = 0L,
+    val durationMillis: Long = 0L
 ) {
-    val easedProgress: Float
-        get() = if (isFeverClimax) {
+    fun currentProgress(now: Long = 0L): Float {
+        if (durationMillis > 0L && now > 0L) {
+            val raw = ((now - startTimeMillis).toFloat() / durationMillis).coerceIn(0f, 1f)
+            return raw * raw
+        }
+        return progress
+    }
+
+    fun easedProgressAt(now: Long = 0L): Float {
+        val p = currentProgress(now)
+        return if (isFeverClimax) {
             // Dramatic slow-motion ease with rapid final exit
-            if (progress < 0.6f) {
+            if (p < 0.6f) {
                 // Suspenseful slow drift
-                (progress / 0.6f) * 0.45f
+                (p / 0.6f) * 0.45f
             } else {
                 // Explosive supersonic exit
-                val p = (progress - 0.6f) / 0.4f
-                0.45f + (1f - (1f - p) * (1f - p)) * 0.55f
+                val sub = (p - 0.6f) / 0.4f
+                0.45f + (1f - (1f - sub) * (1f - sub)) * 0.55f
             }
         } else {
-            1f - (1f - progress) * (1f - progress)
+            1f - (1f - p) * (1f - p)
         }
+    }
 
-    val scaleAlongDir: Float
-        get() = when {
+    val easedProgress: Float
+        get() = easedProgressAt(0L)
+
+    fun scaleAlongDirAt(now: Long = 0L): Float {
+        val p = currentProgress(now)
+        return when {
             // Anticipation squish (first 15% of launch)
-            progress < 0.15f -> 0.78f + (progress / 0.15f) * 0.22f
+            p < 0.15f -> 0.78f + (p / 0.15f) * 0.22f
             // High-speed aerodynamic stretch during flight
-            progress < 0.7f -> if (isFeverClimax) 1.5f else 1.38f
+            p < 0.7f -> if (isFeverClimax) 1.5f else 1.38f
             // Settle as it leaves screen
             else -> 1.1f
         }
+    }
 
-    val scalePerpendicular: Float
-        get() = when {
-            progress < 0.15f -> 1.28f
-            progress < 0.7f -> if (isFeverClimax) 0.68f else 0.74f
+    val scaleAlongDir: Float
+        get() = scaleAlongDirAt(0L)
+
+    fun scalePerpendicularAt(now: Long = 0L): Float {
+        val p = currentProgress(now)
+        return when {
+            p < 0.15f -> 1.28f
+            p < 0.7f -> if (isFeverClimax) 0.68f else 0.74f
             else -> 0.9f
         }
+    }
+
+    val scalePerpendicular: Float
+        get() = scalePerpendicularAt(0L)
+
+    fun alphaAt(now: Long = 0L): Float {
+        val p = currentProgress(now)
+        return (1f - (p - 0.7f).coerceAtLeast(0f) / 0.3f).coerceIn(0f, 1f)
+    }
 
     val alpha: Float
-        get() = (1f - (progress - 0.7f).coerceAtLeast(0f) / 0.3f).coerceIn(0f, 1f)
+        get() = alphaAt(0L)
 }
 
 data class WobbleAnimation(

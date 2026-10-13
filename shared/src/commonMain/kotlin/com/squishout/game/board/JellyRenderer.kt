@@ -56,10 +56,44 @@ object JellyRenderer {
         val breatheScaleX = if (isPressed || abs(wobbleOffset) > 0.05f || abs(recoilOffset) > 0.05f) 1f else 1f + breatheWave * 0.022f
         val breatheScaleY = if (isPressed || abs(wobbleOffset) > 0.05f || abs(recoilOffset) > 0.05f) 1f else 1f - breatheWave * 0.022f
 
-        // 2. Touch anticipation squash under finger
-        val pressScaleX = if (isPressed) 1.14f else 1f
-        val pressScaleY = if (isPressed) 0.86f else 1f
-        val pressOffsetY = if (isPressed) tileSize * 0.04f else 0f
+        // 2. Touch anticipation squash under finger (direction-aware recoil tension)
+        val pressScaleX: Float
+        val pressScaleY: Float
+        val pressOffsetX: Float
+        val pressOffsetY: Float
+        if (isPressed) {
+            when (jelly.direction) {
+                Direction.EAST -> {
+                    pressScaleX = 0.88f
+                    pressScaleY = 1.12f
+                    pressOffsetX = -tileSize * 0.04f
+                    pressOffsetY = 0f
+                }
+                Direction.WEST -> {
+                    pressScaleX = 0.88f
+                    pressScaleY = 1.12f
+                    pressOffsetX = tileSize * 0.04f
+                    pressOffsetY = 0f
+                }
+                Direction.NORTH -> {
+                    pressScaleX = 1.12f
+                    pressScaleY = 0.88f
+                    pressOffsetX = 0f
+                    pressOffsetY = tileSize * 0.04f
+                }
+                Direction.SOUTH -> {
+                    pressScaleX = 1.12f
+                    pressScaleY = 0.88f
+                    pressOffsetX = 0f
+                    pressOffsetY = -tileSize * 0.04f
+                }
+            }
+        } else {
+            pressScaleX = 1f
+            pressScaleY = 1f
+            pressOffsetX = 0f
+            pressOffsetY = 0f
+        }
 
         // 3. Accordion pancake deformation against obstacles or when struck
         val absWobble = maxOf(abs(wobbleOffset), abs(recoilOffset))
@@ -78,7 +112,7 @@ object JellyRenderer {
         val totalScaleX = scaleX * breatheScaleX * pressScaleX * pancakeScaleX
         val totalScaleY = scaleY * breatheScaleY * pressScaleY * pancakeScaleY
 
-        val cx = topLeft.x + width / 2f + offsetX
+        val cx = topLeft.x + width / 2f + offsetX + pressOffsetX
         val cy = topLeft.y + height / 2f + offsetY + pressOffsetY
 
         drawScope.apply {
@@ -161,7 +195,8 @@ object JellyRenderer {
                 animTimeSeconds = animTimeSeconds,
                 phase = phase,
                 isWobbling = isWobbling,
-                touchPoint = touchPoint
+                touchPoint = touchPoint,
+                isPressed = isPressed
             )
         }
     }
@@ -229,7 +264,8 @@ object JellyRenderer {
         animTimeSeconds: Float,
         phase: Float,
         isWobbling: Boolean,
-        touchPoint: Offset? = null
+        touchPoint: Offset? = null,
+        isPressed: Boolean = false
     ) {
         // Shift eye center slightly toward travel direction
         val eyeShiftX = direction.dx * tileSize * 0.08f
@@ -280,12 +316,15 @@ object JellyRenderer {
             )
         } else if (eyeState == EyeState.AWAKE) {
             // Sparkling wide awake eyes with pupil glancing towards exit direction OR player finger ( ✦‿✦ )
-            val (pupilGlanceX, pupilGlanceY) = if (touchPoint != null) {
+            val (pupilGlanceX, pupilGlanceY) = if (isPressed) {
+                // When pressed, eyes look firmly in exit direction with focused anticipation
+                Pair(direction.dx * eyeRadius * 0.45f, direction.dy * eyeRadius * 0.45f)
+            } else if (touchPoint != null) {
                 val tdx = touchPoint.x - faceCenterX
                 val tdy = touchPoint.y - faceCenterY
                 val dist = kotlin.math.hypot(tdx, tdy)
                 if (dist > 1f) {
-                    val maxGlance = eyeRadius * 0.44f
+                    val maxGlance = eyeRadius * 0.35f
                     Pair((tdx / dist) * maxGlance, (tdy / dist) * maxGlance)
                 } else {
                     Pair(direction.dx * eyeRadius * 0.32f, direction.dy * eyeRadius * 0.32f)

@@ -48,9 +48,11 @@ fun GummyToggleSwitch(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    // Bouncy spring animation for knob translation
+    val trackShape = RoundedCornerShape(16.dp)
+
+    // Bouncy spring animation for knob translation (bounds carefully calibrated within 62x34 container)
     val thumbOffset by animateDpAsState(
-        targetValue = if (checked) 28.dp else 3.dp,
+        targetValue = if (checked) 33.dp else 3.dp,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -70,47 +72,9 @@ fun GummyToggleSwitch(
         label = "GummySquishY"
     )
 
-    val trackShape = RoundedCornerShape(16.dp)
-
     Box(
         modifier = modifier
-            .size(width = 58.dp, height = 32.dp)
-            .shadow(
-                elevation = if (checked) 2.dp else 1.dp,
-                shape = trackShape,
-                spotColor = if (checked) Color(0xFF059669) else Color.Black.copy(alpha = 0.15f)
-            )
-            .clip(trackShape)
-            // Outer 3D bevel rim
-            .background(
-                if (checked) Color(0xFF047857) else Color(0xFF94A3B8)
-            )
-            .padding(1.dp)
-            // Track inner well
-            .background(
-                if (checked) {
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF0D9488),
-                            Color(0xFF10B981),
-                            Color(0xFF059669)
-                        )
-                    )
-                } else {
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFCBD5E1),
-                            Color(0xFFE2E8F0),
-                            Color(0xFFF1F5F9)
-                        )
-                    )
-                }
-            )
-            .border(
-                width = 1.dp,
-                color = if (checked) Color(0xFF34D399).copy(alpha = 0.5f) else Color.White.copy(alpha = 0.6f),
-                shape = trackShape
-            )
+            .size(width = 62.dp, height = 34.dp)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -120,34 +84,78 @@ fun GummyToggleSwitch(
             },
         contentAlignment = Alignment.CenterStart
     ) {
-        // Track text indicator (ON / OFF)
-        if (checked) {
-            Text(
-                text = "ON",
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Black,
-                color = Color.White.copy(alpha = 0.9f),
-                letterSpacing = 0.5.sp,
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(start = 7.dp)
-            )
-        } else {
-            Text(
-                text = "OFF",
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Black,
-                color = Color(0xFF64748B),
-                letterSpacing = 0.5.sp,
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 6.dp)
-            )
-        }
-
-        // Bouncy 3D Gummy Knob
+        // 1. Recessed Track Pill Well (clips only its own inner gradients and indicators)
         Box(
             modifier = Modifier
+                .align(Alignment.Center)
+                .size(width = 58.dp, height = 30.dp)
+                .shadow(
+                    elevation = if (checked) 2.dp else 1.dp,
+                    shape = trackShape,
+                    spotColor = if (checked) Color(0xFF059669) else Color.Black.copy(alpha = 0.15f)
+                )
+                .clip(trackShape)
+                // Outer 3D bevel rim
+                .background(
+                    if (checked) Color(0xFF047857) else Color(0xFF94A3B8)
+                )
+                .padding(1.dp)
+                // Track inner well
+                .background(
+                    if (checked) {
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFF0D9488),
+                                Color(0xFF10B981),
+                                Color(0xFF059669)
+                            )
+                        )
+                    } else {
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFFCBD5E1),
+                                Color(0xFFE2E8F0),
+                                Color(0xFFF1F5F9)
+                            )
+                        )
+                    }
+                )
+                .border(
+                    width = 1.dp,
+                    color = if (checked) Color(0xFF34D399).copy(alpha = 0.5f) else Color.White.copy(alpha = 0.6f),
+                    shape = trackShape
+                )
+        ) {
+            // Track text indicator (ON / OFF)
+            if (checked) {
+                Text(
+                    text = "ON",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White.copy(alpha = 0.9f),
+                    letterSpacing = 0.5.sp,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = 7.dp)
+                )
+            } else {
+                Text(
+                    text = "OFF",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF64748B),
+                    letterSpacing = 0.5.sp,
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 6.dp)
+                )
+            }
+        }
+
+        // 2. Bouncy 3D Gummy Knob (floats unclipped with full specular highlights, spring overshoot, and drop shadow)
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
                 .offset(x = thumbOffset)
                 .size(26.dp)
                 .scale(scaleX = squishX, scaleY = squishY)
