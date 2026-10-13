@@ -31,6 +31,7 @@ class GameRepository(
     companion object {
         const val REFILL_INTERVAL_MS = 20 * 60 * 1000L // 20 minutes per life
         const val MAX_LIVES = 5
+        const val MAX_SUPPORTED_STAGES = 150
     }
 
     val session: StateFlow<UserSessionEntity> = sessionDao.getSession()
@@ -205,10 +206,11 @@ class GameRepository(
         }
         sessionDao.addDiamonds(diamondsAwarded)
 
-        // Advance unlocked stage if current level completed
+        // Advance unlocked stage if current level completed (capped at MAX_SUPPORTED_STAGES)
         val currentSession = sessionDao.getSession().firstOrNull()
         if (currentSession != null && levelNumber >= currentSession.currentStage) {
-            sessionDao.updateCurrentStage(levelNumber + 1)
+            val nextStage = minOf(MAX_SUPPORTED_STAGES, levelNumber + 1)
+            sessionDao.updateCurrentStage(nextStage)
         }
         if (levelNumber == 1) {
             sessionDao.updateHasCompletedTutorial(true)

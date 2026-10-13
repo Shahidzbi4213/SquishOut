@@ -191,6 +191,7 @@ fun VictoryModal(
                         // Action Buttons Cluster
                         // Primary 3D Push Button: NEXT LEVEL
                         JuicyNextLevelButton(
+                            isLastStage = stage >= 150,
                             onClick = onNextLevel
                         )
 
@@ -701,6 +702,7 @@ private fun formatScoreNumber(score: Int): String {
 @Composable
 private fun JuicyNextLevelButton(
     onClick: () -> Unit,
+    isLastStage: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -759,7 +761,7 @@ private fun JuicyNextLevelButton(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "NEXT LEVEL",
+                    text = if (isLastStage) "BACK TO MAP" else "NEXT LEVEL",
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.White,
@@ -773,7 +775,7 @@ private fun JuicyNextLevelButton(
                     )
                 )
                 Text(
-                    text = "➔",
+                    text = if (isLastStage) "🗺️" else "➔",
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.White
@@ -855,7 +857,7 @@ private fun StageCompletedFooterPill(
             }
 
             Text(
-                text = "WORLD $worldNum • LEVEL $stage COMPLETED",
+                text = if (stage >= 150) "FINAL STAGE 150 COMPLETED! 🎉" else "WORLD $worldNum • LEVEL $stage COMPLETED",
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Black,
                 color = Color(0xFF3B4A43),

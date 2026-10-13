@@ -169,7 +169,13 @@ fun GameScreen(
                     stars = gameState.starsEarned,
                     score = gameState.score,
                     stage = gameState.stageNumber,
-                    onNextLevel = viewModel::nextLevel,
+                    onNextLevel = {
+                        if (gameState.stageNumber >= 150) {
+                            onBackToMap()
+                        } else {
+                            viewModel.nextLevel()
+                        }
+                    },
                     onReplay = viewModel::restartLevel
                 )
             }

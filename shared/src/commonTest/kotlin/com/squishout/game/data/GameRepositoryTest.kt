@@ -252,6 +252,24 @@ class GameRepositoryTest {
     }
 
     @Test
+    fun testLevelCompletionCapsCurrentStageAt150() = runTest(testDispatcher) {
+        sessionDao.updateCurrentStage(150)
+        testScheduler.advanceUntilIdle()
+
+        repository.recordLevelCompletion(
+            levelNumber = 150,
+            stars = 3,
+            score = 3000,
+            movesUsed = 10,
+            timestampEpoch = 123456789L
+        )
+        testScheduler.advanceUntilIdle()
+
+        // Stage progression must NOT advance past 150
+        assertEquals(150, repository.session.value.currentStage)
+    }
+
+    @Test
     fun testEconomyAndRevives() = runTest(testDispatcher) {
         // Drain lives
         val now = 1000000L

@@ -12,6 +12,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class GameEngineTest {
@@ -163,6 +164,55 @@ class GameEngineTest {
         assertTrue(result.clearedFog.contains(Position(2, 1)))
         assertFalse(engine.state.value.board.isFoggy(Position(2, 1)))
         assertTrue(engine.state.value.board.isFoggy(Position(5, 5)))
+    }
+
+    @Test
+    fun testMagicWandUnlinksSchoolingPartnerAndAllowsEscape() {
+        // j1 and j2 are schooling partners.
+        // j1 at (2, 2) facing NORTH, blocked by obstacle at (2, 0). So j1 and j2 are ASLEEP.
+        // j2 at (4, 4) facing NORTH with a clear path.
+        val obstacle = com.squishout.engine.model.Obstacle("obs", com.squishout.engine.model.ObstacleType.ROCK_MOUNTAIN, Position(2, 0))
+        val j1 = Jelly("j1", JellyType.STRAWBERRY, Direction.NORTH, listOf(Position(2, 2)), linkedJellyId = "j2")
+        val j2 = Jelly("j2", JellyType.BLUEBERRY, Direction.NORTH, listOf(Position(4, 4)), linkedJellyId = "j1")
+        val board = Board(jellies = listOf(j1, j2), obstacles = listOf(obstacle)).withUpdatedEyeStates()
+        val level = Level(stageNumber = 10, initialBoard = board, optimalMoves = 1, targetScore = 500)
+
+        engine.loadLevel(level)
+        // Both are asleep because j1 is blocked
+        assertEquals(EyeState.ASLEEP, engine.state.value.board.getJellyById("j1")?.eyeState)
+        assertEquals(EyeState.ASLEEP, engine.state.value.board.getJellyById("j2")?.eyeState)
+
+        // Vaporize j1 with magic wand
+        val removed = engine.useMagicWand()
+        assertNotNull(removed)
+
+        // Surviving jelly j2 must now be unlinked and AWAKE since its corridor is clear
+        val survivingJ2 = engine.state.value.board.getJellyById("j2")
+        assertNotNull(survivingJ2)
+        assertNull(survivingJ2.linkedJellyId)
+        assertEquals(EyeState.AWAKE, survivingJ2.eyeState)
+
+        // j2 can now launch independently!
+        val result = engine.onTileTapped(Position(4, 4))
+        assertIs<TapResult.Launched>(result)
+        assertEquals(0, engine.state.value.board.jellies.size)
+        assertTrue(engine.state.value.isCompleted)
+    }
+
+    @Test
+    fun testMagicWandRemovesAwakeJellyWhenNoAsleepJellies() {
+        val j1 = Jelly("j1", JellyType.STRAWBERRY, Direction.NORTH, listOf(Position(2, 2)))
+        val board = Board(jellies = listOf(j1)).withUpdatedEyeStates()
+        val level = Level(stageNumber = 1, initialBoard = board, optimalMoves = 1, targetScore = 500)
+
+        engine.loadLevel(level)
+        assertEquals(EyeState.AWAKE, engine.state.value.board.getJellyById("j1")?.eyeState)
+
+        val removed = engine.useMagicWand()
+        assertNotNull(removed)
+        assertEquals("j1", removed.id)
+        assertTrue(engine.state.value.isCompleted)
+        assertEquals(3, engine.state.value.starsEarned)
     }
 }
 

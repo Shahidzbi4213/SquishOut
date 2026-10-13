@@ -195,7 +195,13 @@ data class Board(
      * Removes one or more jellies (such as a launched Symbiotic Schooling Pair) and updates eye states.
      */
     fun removeJellies(jellyIds: Set<String>): Board {
-        val remaining = jellies.filterNot { it.id in jellyIds }
+        val remaining = jellies.filterNot { it.id in jellyIds }.map { jelly ->
+            if (jelly.linkedJellyId in jellyIds) {
+                jelly.copy(linkedJellyId = null)
+            } else {
+                jelly
+            }
+        }
         return copy(jellies = remaining).withUpdatedEyeStates()
     }
 
